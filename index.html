@@ -1,0 +1,2606 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CEIP de Monforte — Horarios</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:opsz,wght@6..12,400;6..12,500;6..12,600;6..12,700;6..12,800;6..12,900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  /* ══════════════════════════════════════════════════
+     Paleta Xunta de Galicia — Manual de Identidad 2021
+     ══════════════════════════════════════════════════
+     Color principal:   #007bc4  (Pantone 7461C · RGB 0,123,196)
+     Color secundario:  #002b4a  (Pantone 7463C · RGB 0,43,74)
+     Tinta 50%:         #80bde2
+     Tinta 25%:         #bfddf0
+     Tinta 10%:         #e6f3fa
+     Blanco:            #ffffff
+     Texto negro:       #1a1a1a
+  */
+  --xblue:  #007bc4;   /* azul corporativo principal */
+  --xdark:  #002b4a;   /* azul marino secundario */
+  --x50:    #80bde2;   /* 50% azul */
+  --x25:    #bfddf0;   /* 25% azul */
+  --x10:    #e6f3fa;   /* 10% azul — fondo muy suave */
+  --x5:     #f2f8fd;   /* 5% azul — casi blanco */
+
+  /* Fondos — blanco institucional */
+  --bg:     #f4f6f8;   /* fondo app — gris muy suave */
+  --surf:   #ffffff;   /* cards y sidebar — blanco puro */
+  --surf2:  #f2f8fd;   /* inputs, hover — azul 5% */
+  --surf3:  #e6f3fa;   /* elementos secundarios — azul 10% */
+  --bd:     #d0e4f0;   /* bordes principales */
+  --bd2:    #b8d4e8;   /* bordes secundarios */
+
+  /* Texto — negro sobre blanco (norma corporativa) */
+  --tx:     #1a1a1a;   /* texto principal */
+  --tx2:    #2d4a5f;   /* texto secundario — azul muy oscuro */
+  --tx3:    #6a8fa8;   /* texto terciario — azul medio */
+
+  /* Acento = azul Xunta */
+  --bl:     var(--xblue);
+  --bl2:    #1a8fd1;
+  --bld:    var(--x10);
+
+  /* OK = azul oscuro (no hay verde en la identidad Xunta) */
+  --gr:     var(--xdark);
+  --grd:    #e6eef4;
+  --sage:   var(--xdark);
+  --saged:  #e6eef4;
+  --sage2:  var(--x50);
+
+  /* Advertencia = azul 50% (no hay naranja en la identidad) */
+  --am:     #5a8fa8;
+  --amd:    var(--x10);
+  --orange: #5a8fa8;
+  --oranged:var(--x10);
+
+  /* Error = rojo reservado solo para alertas críticas */
+  --rd:     #c0392b;
+  --rdd:    #fdecea;
+
+  /* Slate = azul marino */
+  --slate:  var(--xdark);
+  --slate2: var(--x50);
+  --slated: var(--x10);
+
+  --coral:  var(--xblue);
+  --coral2: var(--bl2);
+  --corald: var(--x10);
+
+  --r:10px;--rs:6px;
+}
+
+/* ── Fuente corporativa: Myriad Pro no disponible en web,
+   usamos Nunito Sans que es la alternativa más fiel ── */
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap');
+
+html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Nunito Sans','DM Sans',sans-serif;color:var(--tx);font-weight:500}
+body{display:flex}
+
+/* ── SIDEBAR ── */
+#sidebar{width:232px;background:var(--xdark);border-right:none;display:flex;flex-direction:column;height:100vh;flex-shrink:0}
+.slogo{padding:22px 20px 16px;border-bottom:1px solid rgba(255,255,255,.12)}
+.slogo .sn{font-size:14px;font-weight:800;color:#fff;letter-spacing:.01em;cursor:pointer;transition:color .15s;text-transform:uppercase}
+.slogo .sn:hover{color:var(--x25)}
+.slogo .sy{font-size:11px;color:var(--x50);margin-top:2px}
+.slogo .sm{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;color:var(--xdark);background:var(--x25);padding:2px 8px;border-radius:2px;margin-top:7px;letter-spacing:.08em;text-transform:uppercase}
+nav{flex:1;padding:10px 0;overflow-y:auto}
+.nsec{font-size:9px;font-weight:800;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.12em;padding:12px 20px 5px}
+.ni{display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;font-size:13px;font-weight:600;color:rgba(255,255,255,.7);border-left:3px solid transparent;transition:all .15s;border:none;background:none;width:100%;text-align:left;font-family:'Nunito Sans',sans-serif}
+.ni:hover{color:#fff;background:rgba(255,255,255,.08)}
+.ni.on{color:#fff;background:rgba(0,123,196,.5);border-left:3px solid var(--xblue);font-weight:800}
+.ni .ic{font-size:14px;width:18px;text-align:center}
+.sfooter{padding:12px 20px;border-top:1px solid rgba(255,255,255,.1);font-size:10px;color:rgba(255,255,255,.4);line-height:1.7}
+
+/* ── TOPBAR ── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#topbar{height:56px;background:var(--xblue);border-bottom:none;display:flex;align-items:center;padding:0 28px;gap:12px;flex-shrink:0}
+#topbar .pt{font-size:16px;font-weight:800;color:#fff;letter-spacing:.01em;text-transform:uppercase}
+#topbar .ps{font-size:12px;color:rgba(255,255,255,.7)}
+#topbar .sp{flex:1}
+#ct{flex:1;overflow-y:auto;padding:24px 28px;background:var(--bg)}
+
+/* ── CARDS ── */
+.card{background:var(--surf);border:1px solid var(--bd);border-radius:var(--r);padding:18px;box-shadow:0 1px 3px rgba(0,43,74,.06)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.ga{display:grid;grid-template-columns:repeat(auto-fill,minmax(172px,1fr));gap:12px}
+.stat{background:var(--surf);border:1px solid var(--bd);border-radius:var(--r);padding:17px 20px;border-top:3px solid currentColor;box-shadow:0 1px 3px rgba(0,43,74,.06)}
+.stat .v{font-size:28px;font-weight:800;line-height:1}
+.stat .l{font-size:13px;font-weight:600;color:var(--tx2);margin-top:4px}
+.stat .s{font-size:11px;color:var(--tx3);margin-top:3px}
+
+/* ── BADGES ── */
+.b{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:3px 9px;border-radius:2px;text-transform:uppercase;letter-spacing:.04em}
+.bg{background:var(--x10);color:var(--xdark)}
+.bb{background:var(--x25);color:var(--xdark)}
+.ba{background:#fff3cd;color:#856404;border:1px solid #ffc107}
+.br{background:#fdecea;color:var(--rd)}
+.bp{background:var(--xblue);color:#fff}
+.bk{background:var(--surf3);color:var(--tx3);border:1px solid var(--bd)}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:var(--rs);cursor:pointer;font-weight:700;font-family:'Nunito Sans',sans-serif;transition:all .15s;letter-spacing:.01em}
+.bp2{background:var(--xblue);color:#fff;padding:8px 16px;font-size:13px;border-radius:2px}
+.bp2:hover{background:#0069a8}
+.bg2{background:var(--xdark);color:#fff;padding:8px 16px;font-size:13px;border-radius:2px}
+.bg2:hover{background:#001e35}
+.bo{background:transparent;color:var(--xblue);border:2px solid var(--xblue);padding:6px 14px;font-size:13px;border-radius:2px}
+.bo:hover{background:var(--x10)}
+.bgh{background:transparent;color:var(--tx3);padding:5px 8px;font-size:12px;border-radius:2px}
+.bgh:hover{color:var(--xblue);background:var(--x10)}
+.bsm{padding:4px 10px!important;font-size:11px!important}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── FORM ── */
+.f{display:flex;flex-direction:column;gap:4px}
+.f label{font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.06em}
+.f input,.f select,.f textarea{background:#fff;border:1px solid var(--bd2);border-radius:2px;padding:8px 12px;font-size:13px;color:var(--tx);font-family:'Nunito Sans',sans-serif;font-weight:500;outline:none;transition:border .15s;width:100%}
+.f input:focus,.f select:focus,.f textarea:focus{border-color:var(--xblue);border-width:2px;background:#fff}
+.f select option{background:#fff}
+
+/* ── TABLE ── */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{padding:10px 13px;text-align:left;font-weight:800;color:#fff;border-bottom:none;font-size:11px;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;background:var(--xblue)}
+.tbl td{padding:9px 13px;border-bottom:1px solid var(--bd);color:var(--tx);font-weight:500}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tbody tr:hover td{background:var(--x10)}
+
+/* ── MODAL ── */
+.ov{position:fixed;inset:0;background:rgba(0,43,74,.55);z-index:1000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.mb{background:#fff;border:none;border-radius:var(--r);padding:28px;max-width:540px;width:92vw;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,43,74,.2)}
+.mb.w{max-width:700px}
+.mt{font-size:18px;font-weight:800;color:var(--xdark);margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;text-transform:uppercase;letter-spacing:.01em}
+
+/* ── AVAILABILITY ── */
+.agrid{display:grid;grid-template-columns:repeat(5,1fr);gap:3px}
+.asl{height:24px;border-radius:2px;cursor:pointer;border:none;font-size:9px;font-weight:700;transition:all .15s;display:flex;align-items:center;justify-content:center;width:100%;margin-bottom:3px}
+.av{background:var(--x10);color:var(--xdark);border:1px solid var(--bd)}
+.au{background:#fdecea;color:var(--rd);border:1px solid #f5c6c3}
+
+/* ── SCHEDULE GRID ── */
+.sg{display:grid;gap:3px}
+.sh3{background:var(--xblue);border-radius:2px;padding:7px 4px;text-align:center;font-size:11px;font-weight:800;color:#fff;letter-spacing:.04em;text-transform:uppercase}
+.stc{display:flex;flex-direction:column;justify-content:center;align-items:center;padding:4px;background:var(--surf3);border-radius:2px;font-size:9px;color:var(--tx2);text-align:center;border:1px solid var(--bd)}
+.sc{min-height:56px;border-radius:2px;padding:5px 7px;cursor:grab;border:1px solid transparent;transition:all .1s}
+.sc:active{cursor:grabbing}
+.sc.emp{background:var(--surf2);border:1px dashed var(--bd);cursor:default}
+.sc.ov2{border:2px solid var(--xblue)!important;background:var(--x10)!important}
+.sc.dr{opacity:.3}
+.rc{border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--xdark);letter-spacing:.06em;background:var(--x25);border:1px solid var(--x50);text-transform:uppercase}
+
+/* ── PROGRESS ── */
+.pbar{height:6px;background:var(--surf3);border-radius:0;overflow:hidden;margin:8px 0}
+.pfill{height:100%;background:linear-gradient(90deg,var(--xblue),var(--x50));border-radius:0;transition:width .3s}
+.glog{background:var(--xdark);border:none;border-radius:var(--r);padding:14px 16px;font-family:'DM Mono',monospace;font-size:11px;line-height:1.9;height:360px;overflow-y:auto}
+
+/* ── MISC ── */
+input[type=range]{-webkit-appearance:none;width:100%;height:4px;border-radius:0;background:var(--bd);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:2px;background:var(--xblue);cursor:pointer}
+.cbr{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--tx);cursor:pointer;font-weight:500}
+.cbr input{width:15px;height:15px;accent-color:var(--xblue);cursor:pointer}
+.chip{display:inline-flex;align-items:center;padding:5px 13px;border-radius:2px;font-size:12px;font-weight:700;cursor:pointer;border:2px solid var(--bd2);background:#fff;color:var(--tx2);transition:all .15s;text-transform:uppercase;letter-spacing:.03em}
+.chip:hover{border-color:var(--xblue);color:var(--xblue);background:var(--x10)}
+.chip.on{background:var(--xblue);color:#fff;border-color:var(--xblue)}
+.tabs{display:flex;gap:2px;background:var(--surf3);border-radius:2px;padding:3px;border:1px solid var(--bd)}
+.tbtn{padding:6px 14px;border-radius:2px;border:none;background:transparent;color:var(--tx3);font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito Sans',sans-serif;transition:all .15s;text-transform:uppercase;letter-spacing:.03em}
+.tbtn.on{background:var(--xblue);color:#fff;box-shadow:0 1px 4px rgba(0,43,74,.15)}
+.av2{width:30px;height:30px;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0}
+.pdots{display:flex;gap:2px;align-items:center}
+.pd{width:5px;height:5px;border-radius:1px}
+#toast{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:6px}
+.ti{background:var(--xdark);border:none;border-radius:4px;padding:11px 16px;font-size:13px;font-weight:700;color:#fff;box-shadow:0 8px 24px rgba(0,43,74,.25);display:flex;align-items:center;gap:8px;animation:sli .25s ease}
+@keyframes sli{from{transform:translateX(80px);opacity:0}to{transform:none;opacity:1}}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--surf2)}
+::-webkit-scrollbar-thumb{background:var(--x50);border-radius:2px}
+::-webkit-scrollbar-thumb:hover{background:var(--xblue)}
+.sh2{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}
+.sh2 h1{font-size:22px;font-weight:900;color:var(--xdark);letter-spacing:-.01em;text-transform:uppercase}
+.sh2 p{font-size:12px;color:var(--tx3);margin-top:3px;font-weight:500}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;color:var(--tx3);text-align:center}
+.empty .ei{font-size:42px;margin-bottom:12px}
+.empty .et{font-size:15px;font-weight:800;color:var(--xdark);margin-bottom:6px;text-transform:uppercase;letter-spacing:.01em}
+.empty .es{font-size:13px;line-height:1.6;font-weight:500}
+.step{display:flex;align-items:flex-start;gap:14px;padding:14px 16px;background:var(--surf2);border-radius:var(--r);border-left:4px solid var(--bd2);margin-bottom:8px}
+.stepn{width:32px;height:32px;border-radius:2px;background:var(--xblue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;flex-shrink:0}
+.stepdone .stepn{background:var(--xdark)}
+.stepdone{border-left-color:var(--xdark)}
+.iznzone{border:2px dashed var(--bd2);border-radius:var(--r);padding:28px;text-align:center;cursor:pointer;transition:all .2s}
+.iznzone:hover{border-color:var(--xblue);background:var(--x10)}
+</style>
+</head>
+<body>
+
+<aside id="sidebar">
+  <div class="slogo">
+    <!-- Logo CEIP de Monforte adaptado a identidad Xunta -->
+    <svg width="168" height="36" viewBox="0 0 168 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:10px;display:block">
+      <rect x="0" y="20" width="70" height="10" rx="1" fill="#007bc4"/>
+      <rect x="0" y="17" width="54" height="3" rx="1" fill="#80bde2"/>
+      <polygon points="54,17 104,2 104,17" fill="rgba(255,255,255,0.25)"/>
+      <rect x="60" y="24" width="2" height="6" fill="#bfddf0"/>
+      <rect x="65" y="24" width="2" height="6" fill="#bfddf0"/>
+      <rect x="70" y="24" width="2" height="6" fill="#bfddf0"/>
+      <rect x="114" y="4" width="26" height="26" rx="1" fill="rgba(255,255,255,0.18)"/>
+      <rect x="119" y="9" width="6" height="6" rx="1" fill="rgba(255,255,255,0.3)"/>
+      <rect x="128" y="9" width="6" height="6" rx="1" fill="rgba(255,255,255,0.3)"/>
+      <rect x="0" y="30" width="144" height="1.5" rx="0" fill="rgba(255,255,255,0.15)"/>
+    </svg>
+    <div class="sn" onclick="navigate('config')" title="Configurar centro"><span id="sb-name">CEIP de Monforte</span></div>
+    <div class="sy" id="sb-year">Curso 2024–2025</div>
+    <div class="sm">⬡ Motor CSP</div>
+  </div>
+  <nav>
+    <div class="nsec">Centro</div>
+    <button class="ni" data-tab="config"><span class="ic">⚙️</span>Configuración</button>
+    <div class="nsec">Mis datos</div>
+    <button class="ni" data-tab="teachers"><span class="ic">👤</span>Profesorado</button>
+    <button class="ni" data-tab="groups"><span class="ic">🏫</span>Grupos</button>
+    <button class="ni" data-tab="subjects"><span class="ic">📖</span>Materias</button>
+    <button class="ni" data-tab="curriculum"><span class="ic">📚</span>Curriculum</button>
+    <button class="ni" data-tab="asistente" style="border-left:3px solid var(--orange)"><span class="ic">🧩</span>Asignación prof.</button>
+    <button class="ni" data-tab="constraints"><span class="ic">🔒</span>Restricciones</button>
+    <div class="nsec">Horario</div>
+    <button class="ni" data-tab="generator"><span class="ic">⚡</span>Generador</button>
+    <button class="ni" data-tab="schedule"><span class="ic">📅</span>Ver horarios</button>
+    <button class="ni" data-tab="export"><span class="ic">📤</span>Exportar</button>
+  </nav>
+  <div class="sfooter">
+    <div id="sb-status" style="color:var(--orange)">Sin datos · Empieza en Configuración</div>
+    <div style="margin-top:3px">v2.0 · Datos locales · Sin servidor</div>
+  </div>
+</aside>
+
+<div id="main">
+  <div id="topbar">
+    <div><div class="pt" id="tb-title">Configuración</div><div class="ps" id="tb-sub">Empieza aquí</div></div>
+    <div class="sp"></div>
+    <span id="tb-autosave" style="font-size:11px;font-weight:700;color:var(--sage);opacity:0;transition:opacity .4s;margin-right:4px">✓ Guardado</span>
+    <button class="btn bo bsm" onclick="exportData()" title="Descargar copia de seguridad .json">💾 Copia seg.</button>
+    <label class="btn bo bsm" style="cursor:pointer" title="Cargar datos desde archivo">📂 Cargar <input type="file" accept=".json" style="display:none" onchange="importData(event)"></label>
+    <span class="b bk" id="tb-score" style="font-size:11px">Sin horario</span>
+  </div>
+  <div id="ct"></div>
+</div>
+
+<div id="toast"></div>
+<div id="mr"></div>
+
+<!-- ═══ Firebase SDK — debe cargarse ANTES que el script de la app ═══ -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+// ════════════════════════════════════════════════════
+// ESTADO — materias y curriculum reales del CEIP de Monforte
+// ════════════════════════════════════════════════════
+const S={
+  center:{name:"CEIP de Monforte",year:"2024-2025",address:"",phone:"",director:"",code:""},
+  teachers:[],
+  groups:[],
+  subjects:[
+    // ── Materias reales según tabla oficial ──────────────────
+    // Instrumentales
+    {id:"s1", code:"MAT", name:"Matemáticas",                      bg:"#3b0a0a",tx:"#fca5a5",bd:"#7f1d1d",instr:true},
+    {id:"s2", code:"LCL", name:"Lengua Castellana y Literatura",   bg:"#451a03",tx:"#fcd34d",bd:"#78350f",instr:true},
+    {id:"s3", code:"LGL", name:"Lengua Gallega y Literatura",      bg:"#1a3a0a",tx:"#86efac",bd:"#166534",instr:true},
+    {id:"s4", code:"LEX", name:"Lengua Extranjera",                bg:"#1e3a5f",tx:"#93c5fd",bd:"#1e40af",instr:false},
+    // Ciencias
+    {id:"s5", code:"CN",  name:"Ciencias de la Naturaleza",        bg:"#064e3b",tx:"#6ee7b7",bd:"#065f46",instr:false},
+    {id:"s6", code:"CS",  name:"Ciencias Sociales",                bg:"#0c4a6e",tx:"#7dd3fc",bd:"#075985",instr:false},
+    // Resto
+    {id:"s7", code:"EF",  name:"Educación Física",                 bg:"#3b0764",tx:"#c4b5fd",bd:"#5b21b6",instr:false},
+    {id:"s8", code:"PLST",name:"Educación Plástica y Visual",      bg:"#431407",tx:"#fed7aa",bd:"#9a3412",instr:false},
+    {id:"s9", code:"MUS", name:"Música y Danza",                   bg:"#500724",tx:"#fbcfe8",bd:"#9d174d",instr:false},
+    {id:"s10",code:"EVCE",name:"Ed. en Valores Cívicos y Éticos",  bg:"#1a1a2e",tx:"#a5f3fc",bd:"#164e63",instr:false},
+    {id:"s11",code:"REL", name:"Religión/Proyecto Competencial",   bg:"#422006",tx:"#fde68a",bd:"#92400e",instr:false},
+    // Complementarias
+    {id:"s12",code:"TUT", name:"Tutoría",                          bg:"#1e1e2e",tx:"#94a3b8",bd:"#1e293b",instr:false},
+    {id:"s13",code:"PT",  name:"Apoyo PT/AL",                      bg:"#500724",tx:"#f9a8d4",bd:"#be185d",instr:false},
+    {id:"s14",code:"REF", name:"Refuerzo",                         bg:"#2e1065",tx:"#ddd6fe",bd:"#5b21b6",instr:false},
+  ],
+
+  // ── Curriculum predefinido por curso (tabla oficial) ────────
+  // Clave: nombre del grupo. Sesiones = horas semanales de la tabla.
+  // El profesor (tid) queda vacío "" para que el usuario lo asigne.
+  // Se usa como PLANTILLA: al crear un grupo con addDef() o openGm()
+  // se copia automáticamente si el grupo tiene el mismo nombre de curso.
+  _curriculumTemplates:{
+    "1º":[
+      {sid:"s1", tid:"", sessions:5},  // MAT 5
+      {sid:"s2", tid:"", sessions:4},  // LCL 4
+      {sid:"s3", tid:"", sessions:4},  // LGL 4
+      {sid:"s4", tid:"", sessions:2},  // LEX 2
+      {sid:"s5", tid:"", sessions:3},  // CN  3
+      {sid:"s6", tid:"", sessions:2},  // CS  2
+      {sid:"s7", tid:"", sessions:2},  // EF  2
+      {sid:"s8", tid:"", sessions:1},  // PLST1
+      {sid:"s9", tid:"", sessions:1},  // MUS 1
+      {sid:"s10",tid:"", sessions:0},  // EVCE0
+      {sid:"s11",tid:"", sessions:1},  // REL 1
+    ],
+    "2º":[
+      {sid:"s1", tid:"", sessions:5},
+      {sid:"s2", tid:"", sessions:4},
+      {sid:"s3", tid:"", sessions:4},
+      {sid:"s4", tid:"", sessions:2},
+      {sid:"s5", tid:"", sessions:2},
+      {sid:"s6", tid:"", sessions:3},
+      {sid:"s7", tid:"", sessions:2},
+      {sid:"s8", tid:"", sessions:1},
+      {sid:"s9", tid:"", sessions:1},
+      {sid:"s10",tid:"", sessions:0},
+      {sid:"s11",tid:"", sessions:1},
+    ],
+    "3º":[
+      {sid:"s1", tid:"", sessions:4},
+      {sid:"s2", tid:"", sessions:4},
+      {sid:"s3", tid:"", sessions:4},
+      {sid:"s4", tid:"", sessions:3},
+      {sid:"s5", tid:"", sessions:3},
+      {sid:"s6", tid:"", sessions:2},
+      {sid:"s7", tid:"", sessions:2},
+      {sid:"s8", tid:"", sessions:1},
+      {sid:"s9", tid:"", sessions:1},
+      {sid:"s10",tid:"", sessions:0},
+      {sid:"s11",tid:"", sessions:1},
+    ],
+    "4º":[
+      {sid:"s1", tid:"", sessions:4},
+      {sid:"s2", tid:"", sessions:4},
+      {sid:"s3", tid:"", sessions:4},
+      {sid:"s4", tid:"", sessions:3},
+      {sid:"s5", tid:"", sessions:2},
+      {sid:"s6", tid:"", sessions:3},
+      {sid:"s7", tid:"", sessions:2},
+      {sid:"s8", tid:"", sessions:1},
+      {sid:"s9", tid:"", sessions:1},
+      {sid:"s10",tid:"", sessions:0},
+      {sid:"s11",tid:"", sessions:1},
+    ],
+    "5º":[
+      {sid:"s1", tid:"", sessions:4},
+      {sid:"s2", tid:"", sessions:4},
+      {sid:"s3", tid:"", sessions:4},
+      {sid:"s4", tid:"", sessions:3},
+      {sid:"s5", tid:"", sessions:3},
+      {sid:"s6", tid:"", sessions:2},
+      {sid:"s7", tid:"", sessions:2},
+      {sid:"s8", tid:"", sessions:1},
+      {sid:"s9", tid:"", sessions:1},
+      {sid:"s10",tid:"", sessions:0},
+      {sid:"s11",tid:"", sessions:1},
+    ],
+    "6º":[
+      {sid:"s1", tid:"", sessions:4},
+      {sid:"s2", tid:"", sessions:4},
+      {sid:"s3", tid:"", sessions:4},
+      {sid:"s4", tid:"", sessions:3},
+      {sid:"s5", tid:"", sessions:2},
+      {sid:"s6", tid:"", sessions:2},
+      {sid:"s7", tid:"", sessions:2},
+      {sid:"s8", tid:"", sessions:1},
+      {sid:"s9", tid:"", sessions:1},
+      {sid:"s10",tid:"", sessions:1},  // EVCE aparece en 6º
+      {sid:"s11",tid:"", sessions:1},
+    ],
+  },
+
+  curriculum:{},
+  constraints:[],
+  schedule:{},
+  activeVersion:null,
+  versions:[],
+  slots:[
+    {n:1, time:"09:00–09:50", label:"1ª sesión",        type:"class",    recess:false},
+    {n:2, time:"09:50–10:40", label:"2ª sesión",        type:"class",    recess:false},
+    {n:3, time:"10:40–11:30", label:"3ª sesión",        type:"class",    recess:false},
+    {n:4, time:"11:30–11:55", label:"Recreo",           type:"recess",   recess:true},
+    {n:5, time:"11:55–12:20", label:"Hora de Leer",     type:"reading",  recess:true},
+    {n:6, time:"12:20–13:10", label:"4ª sesión",        type:"class",    recess:false},
+    {n:7, time:"13:10–14:00", label:"5ª sesión",        type:"class",    recess:false},
+    {n:8, time:"14:00–15:00", label:"Comedor",          type:"lunch",    recess:true},
+    {n:9, time:"15:00–16:00", label:"Guardia Biblioteca",type:"library", recess:true},
+  ],
+};
+
+const DAYS=["Lunes","Martes","Miércoles","Jueves","Viernes"];
+const CLRS=["#3b82f6","#10b981","#8b5cf6","#f59e0b","#06b6d4","#ec4899","#a855f7","#f97316","#14b8a6","#84cc16","#0ea5e9","#dc2626","#db2777","#d97706","#65a30d","#0284c7"];
+const BGCS=[["#3b0a0a","#fca5a5","#7f1d1d"],["#451a03","#fcd34d","#78350f"],["#1e3a5f","#93c5fd","#1e40af"],["#064e3b","#6ee7b7","#065f46"],["#0c4a6e","#7dd3fc","#075985"],["#3b0764","#c4b5fd","#5b21b6"],["#500724","#fbcfe8","#9d174d"],["#422006","#fde68a","#92400e"],["#431407","#fed7aa","#9a3412"],["#0f172a","#94a3b8","#1e293b"],["#2e1065","#ddd6fe","#5b21b6"],["#1a1a2e","#a5f3fc","#164e63"]];
+let tab="config", dragSrc=null, selT=null, curGid=null, svMode="group", svGrp=null, svTch=null;
+
+const $=id=>document.getElementById(id);
+const gt=id=>S.teachers.find(t=>t.id===id);
+const gg=id=>S.groups.find(g=>g.id===id);
+const gs=id=>S.subjects.find(s=>s.id===id);
+const ini=n=>n.split(" ").map(x=>x[0]).join("").slice(0,2).toUpperCase();
+const uid=()=>"x"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+
+function toast(msg,t="ok"){
+  const d=document.createElement("div");d.className="ti";
+  d.innerHTML=(t==="ok"?"✅":t==="err"?"❌":"⚠️")+" "+msg;
+  $("toast").appendChild(d);
+  setTimeout(()=>{d.style.animation="sli .3s reverse forwards";setTimeout(()=>d.remove(),300);},3000);
+}
+function om(h){$("mr").innerHTML=`<div class="ov" id="ov">${h}</div>`;$("ov").addEventListener("click",e=>{if(e.target.id==="ov")cm();});}
+function cm(){$("mr").innerHTML="";}
+
+function upd(){
+  $("sb-name").textContent=S.center.name||"Mi CEIP";
+  $("sb-year").textContent="Curso "+(S.center.year||"2024-2025");
+  const ok=S.teachers.length>0&&S.groups.length>0;
+  $("sb-status").textContent=ok?`${S.teachers.length} prof · ${S.groups.length} grupos`:"Sin datos · Empieza en Configuración";
+  $("sb-status").style.color=ok?"var(--sage)":"var(--orange)";
+}
+
+// Franjas predefinidas del CEIP de Monforte — fuente de verdad
+const DEFAULT_SLOTS=[
+  {n:1, time:"09:00–09:50", label:"1ª sesión",         type:"class",   recess:false},
+  {n:2, time:"09:50–10:40", label:"2ª sesión",         type:"class",   recess:false},
+  {n:3, time:"10:40–11:30", label:"3ª sesión",         type:"class",   recess:false},
+  {n:4, time:"11:30–11:55", label:"Recreo",            type:"recess",  recess:true},
+  {n:5, time:"11:55–12:20", label:"Hora de Leer",      type:"reading", recess:true},
+  {n:6, time:"12:20–13:10", label:"4ª sesión",         type:"class",   recess:false},
+  {n:7, time:"13:10–14:00", label:"5ª sesión",         type:"class",   recess:false},
+  {n:8, time:"14:00–15:00", label:"Comedor",           type:"lunch",   recess:true},
+  {n:9, time:"15:00–16:00", label:"Guardia Biblioteca",type:"library", recess:true},
+];
+
+// Migra slots de formato antiguo (sin label/type) al nuevo
+function fixSlots(){
+  if(!S.slots||S.slots.length===0){ S.slots=[...DEFAULT_SLOTS.map(s=>({...s}))]; return; }
+  S.slots=S.slots.map((sl,i)=>{
+    const def=DEFAULT_SLOTS[i]||{};
+    return {
+      n:    sl.n    ?? i+1,
+      time: sl.time ?? def.time ?? "",
+      label:sl.label && sl.label!=="undefined" ? sl.label : (def.label ?? "Franja "+(i+1)),
+      type: sl.type ?? (sl.recess ? "recess" : "class"),
+      recess: sl.recess ?? (sl.type!=="class"),
+    };
+  });
+}
+
+// Restaura las franjas a los valores predefinidos del centro
+function resetSlots(){
+  if(!confirm("¿Restaurar las franjas horarias predefinidas del CEIP de Monforte?")) return;
+  S.slots=DEFAULT_SLOTS.map(s=>({...s}));
+  pgConfig($("ct")); save();
+  toast("Franjas horarias restauradas");
+}
+
+const TABS={
+  config:     {t:"Configuración del centro",  s:"Datos del colegio · franjas horarias",        fn:pgConfig},
+  teachers:   {t:"Profesorado",               s:"Añade y gestiona los docentes del centro",     fn:pgTeachers},
+  groups:     {t:"Grupos / Clases",            s:"Unidades del centro",                          fn:pgGroups},
+  subjects:   {t:"Materias",                  s:"Áreas y asignaturas",                          fn:pgSubjects},
+  curriculum: {t:"Curriculum",                s:"Sesiones semanales por grupo y materia",       fn:pgCurriculum},
+  asistente:  {t:"Asistente de asignación",   s:"¿Quién imparte qué? · Tutores y especialistas",fn:pgAsistente},
+  constraints:{t:"Restricciones",             s:"Reglas del motor CSP",                         fn:pgConstraints},
+  generator:  {t:"Generador CSP",             s:"Motor de backtracking · MRV · Forward Check",  fn:pgGenerator},
+  schedule:   {t:"Horarios",                  s:"Vista y edición visual · Drag & Drop",         fn:pgSchedule},
+  export:     {t:"Exportar",                  s:"Impresión · Copiar · Guardar datos",           fn:pgExport},
+};
+function navigate(t){
+  tab=t;
+  document.querySelectorAll(".ni").forEach(b=>b.classList.toggle("on",b.dataset.tab===t));
+  $("tb-title").textContent=TABS[t].t; $("tb-sub").textContent=TABS[t].s;
+  $("ct").innerHTML=""; TABS[t].fn($("ct")); upd();
+}
+document.querySelectorAll(".ni").forEach(b=>b.addEventListener("click",()=>navigate(b.dataset.tab)));
+
+// ════════════════════════════════════════════════════
+// 1 · CONFIGURACIÓN
+// ════════════════════════════════════════════════════
+function pgConfig(c){
+  const steps=[
+    {n:1,tab:"teachers",l:"Añade al profesorado",    d:"Nombre, especialidad, horas y disponibilidad de cada docente.",done:S.teachers.length>0},
+    {n:2,tab:"groups",  l:"Crea los grupos del centro",d:"I-3A, I-4A, 1ºA, 2ºB... y asigna el tutor/a de cada uno.",done:S.groups.length>0},
+    {n:3,tab:"subjects",l:"Revisa las materias",      d:"Tienes 12 materias predefinidas. Edita, añade o elimina las que necesites.",done:true},
+    {n:4,tab:"curriculum",l:"Configura el curriculum",d:"Cuántas sesiones semanales tiene cada materia en cada grupo.",done:Object.keys(S.curriculum).length>0},
+    {n:5,tab:"constraints",l:"Define restricciones",  d:"EF no después del comedor · MAT en primeras horas · disponibilidades especiales.",done:S.constraints.length>0},
+    {n:6,tab:"generator",l:"Genera el horario",       d:"El motor CSP generará el horario completo respetando todas tus reglas.",done:S.activeVersion!=null},
+  ];
+  c.innerHTML=`
+  <div style="max-width:820px">
+    <div class="card" style="margin-bottom:16px">
+      <div style="font-size:14px;font-weight:700;color:var(--tx);margin-bottom:14px">Datos del centro educativo</div>
+      <div class="g3" style="gap:11px;margin-bottom:11px">
+        <div class="f"><label>Nombre del centro *</label><input id="cn" value="${S.center.name}" placeholder="CEIP Las Pedreras"/></div>
+        <div class="f"><label>Curso escolar</label><input id="cy" value="${S.center.year}" placeholder="2024-2025"/></div>
+        <div class="f"><label>Código del centro</label><input id="cc" value="${S.center.code}" placeholder="04001234"/></div>
+      </div>
+      <div class="g3" style="gap:11px;margin-bottom:14px">
+        <div class="f"><label>Dirección</label><input id="ca" value="${S.center.address}" placeholder="C/ Principal, 1"/></div>
+        <div class="f"><label>Teléfono</label><input id="cp" value="${S.center.phone}" placeholder="920 000 000"/></div>
+        <div class="f"><label>Director/a</label><input id="cd" value="${S.center.director}" placeholder="Nombre completo"/></div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <div style="font-size:13px;font-weight:700;color:var(--tx)">Franjas horarias</div>
+          <button class="btn bo bsm" onclick="resetSlots()" title="Volver a las franjas predefinidas del centro">↺ Restaurar predefinidas</button>
+        </div>
+        <div style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.6">
+          <span style="color:var(--coral);font-weight:700">🟥 Clase</span> · sesión lectiva &nbsp;
+          <span style="color:var(--orange);font-weight:700">🟧 Recreo / Lectura</span> · requiere vigilante &nbsp;
+          <span style="color:var(--slate2);font-weight:700">🟦 Biblioteca</span> · 2 prof. rotativos &nbsp;
+          <span style="color:var(--tx3);font-weight:700">⬜ Comedor</span> · no lectivo
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px" id="slots-list">
+        ${S.slots.map((sl,i)=>{
+          const lbl = sl.label||sl.time||"Franja "+(i+1);
+          const typ  = sl.type ||(sl.recess?"recess":"class");
+          const typeColors={class:"var(--coral)",recess:"var(--orange)",reading:"var(--orange)",lunch:"var(--tx3)",library:"var(--slate2)"};
+          const col=typeColors[typ]||"var(--tx3)";
+          return`<div style="display:flex;gap:7px;align-items:center;padding:7px 10px;background:var(--surf2);border-radius:var(--rs);border:1px solid var(--bd2)">
+            <span style="font-size:11px;color:var(--tx3);width:16px;text-align:right;font-weight:700;flex-shrink:0">${sl.n||i+1}</span>
+            <input value="${lbl}" style="background:var(--surf3);border:1px solid var(--bd2);border-radius:var(--rs);padding:5px 9px;font-size:12px;color:var(--tx);font-family:'DM Sans',sans-serif;width:155px;outline:none" oninput="S.slots[${i}].label=this.value"/>
+            <input value="${sl.time||''}" style="background:var(--surf3);border:1px solid var(--bd2);border-radius:var(--rs);padding:5px 9px;font-size:12px;color:var(--tx);font-family:'DM Mono',monospace;width:128px;outline:none" oninput="S.slots[${i}].time=this.value"/>
+            <select onchange="S.slots[${i}].type=this.value;S.slots[${i}].recess=(this.value!=='class');pgConfig($('ct'))" style="background:var(--surf3);border:1px solid var(--bd2);border-radius:var(--rs);padding:5px 8px;font-size:11px;color:${col};font-family:'DM Sans',sans-serif;outline:none;font-weight:700">
+              <option value="class"   ${typ==="class"   ?"selected":""}>🟥 Clase</option>
+              <option value="recess"  ${typ==="recess"  ?"selected":""}>🟧 Recreo</option>
+              <option value="reading" ${typ==="reading" ?"selected":""}>🟧 Hora de Leer</option>
+              <option value="lunch"   ${typ==="lunch"   ?"selected":""}>⬜ Comedor</option>
+              <option value="library" ${typ==="library" ?"selected":""}>🟦 Biblioteca</option>
+            </select>
+            <span style="font-size:10px;color:var(--tx3);flex:1">${
+              typ==="class"   ?"Sesión lectiva":
+              typ==="recess"  ?"Vigilancia recreo":
+              typ==="reading" ?"Vigilancia lectura":
+              typ==="lunch"   ?"No lectivo":
+              typ==="library" ?"2 prof. rotativos":""
+            }</span>
+            <button class="btn bgh bsm" onclick="S.slots.splice(${i},1);S.slots.forEach((s,j)=>s.n=j+1);pgConfig($('ct'))">✕</button>
+          </div>`;
+        }).join("")}
+        </div>
+        <button class="btn bo bsm" style="margin-top:8px" onclick="S.slots.push({n:S.slots.length+1,time:'00:00–00:00',label:'Nueva franja',type:'class',recess:false});pgConfig($('ct'))">+ Añadir franja</button>
+      </div>
+      <button class="btn bp2" onclick="saveCfg()">Guardar configuración del centro</button>
+    </div>
+
+    <div style="font-size:14px;font-weight:700;color:var(--tx);margin-bottom:11px">🗺️ Guía paso a paso</div>
+    ${steps.map(st=>`
+    <div class="step ${st.done?"stepdone":""}">
+      <div class="stepn">${st.done?"✓":st.n}</div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700;color:var(--tx)">${st.l}</div>
+        <div style="font-size:12px;color:var(--tx3);margin-top:2px">${st.d}</div>
+      </div>
+      <button class="btn ${st.done?"bo":"bp2"} bsm" onclick="navigate('${st.tab}')">${st.done?"Ver →":"Ir →"}</button>
+    </div>`).join("")}
+
+    <div class="card" style="margin-top:16px;border-color:rgba(91,91,123,.4);background:rgba(91,91,123,.06)">
+      <div style="font-size:13px;font-weight:700;color:var(--slate2);margin-bottom:9px">☁️ Sincronización en la nube — Firebase</div>
+      <div style="font-size:12px;margin-bottom:12px;line-height:1.7;color:var(--tx2)">
+        ${FIREBASE_CONFIG.projectId
+          ? `<span style="color:var(--sage)">✓ Firebase configurado · proyecto: <strong style="color:var(--tx)">${FIREBASE_CONFIG.projectId}</strong></span>`
+          : `<span style="color:var(--orange)">⚠ Firebase no configurado todavía. Los datos solo se guardan en este navegador.</span>`}
+      </div>
+      <details>
+        <summary style="cursor:pointer;font-size:12px;font-weight:700;color:var(--slate2);margin-bottom:8px;list-style:none">▶ Instrucciones paso a paso (clic para ver)</summary>
+        <ol style="padding-left:18px;line-height:2.1;margin-top:10px;font-size:12px;color:var(--tx2)">
+          <li>Ve a <a href="https://console.firebase.google.com" target="_blank" style="color:var(--coral)">console.firebase.google.com</a> e inicia sesión con tu cuenta Google</li>
+          <li>Clic en <strong style="color:var(--tx)">"Añadir proyecto"</strong> → nombre del proyecto → desactiva Google Analytics → Crear proyecto</li>
+          <li>En el menú izquierdo: <strong style="color:var(--tx)">Firestore Database → Crear base de datos</strong> → Modo producción → Región <em>eur3 (europe-west)</em> → Habilitar</li>
+          <li>En Firestore ve a la pestaña <strong style="color:var(--tx)">Reglas</strong> y reemplaza todo el contenido con esto:<br>
+            <pre style="background:var(--surf2);padding:8px 10px;border-radius:var(--rs);font-size:10px;color:var(--sage);margin:5px 0;font-family:'DM Mono',monospace;line-height:1.7">rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents/{doc=**} {
+    allow read, write: if true;
+  }
+}</pre>
+            Haz clic en <strong style="color:var(--tx)">Publicar</strong>
+          </li>
+          <li>Ve a ⚙️ <strong style="color:var(--tx)">Configuración del proyecto</strong> (icono engranaje arriba a la izquierda)</li>
+          <li>En la sección <strong style="color:var(--tx)">"Tus aplicaciones"</strong> → icono <code style="color:var(--sage)">&lt;/&gt;</code> (Web) → ponle un nombre → Registrar app</li>
+          <li>Copia los valores del objeto <code style="color:var(--sage)">firebaseConfig</code> que aparece y pégalos en los campos de abajo</li>
+          <li>Pulsa <strong style="color:var(--tx)">"Conectar con Firebase"</strong> y luego sube el HTML actualizado a GitHub</li>
+        </ol>
+      </details>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px">
+        <div class="f"><label>apiKey</label><input id="fb-apiKey" value="${FIREBASE_CONFIG.apiKey}" placeholder="AIzaSy…"/></div>
+        <div class="f"><label>authDomain</label><input id="fb-authDomain" value="${FIREBASE_CONFIG.authDomain}" placeholder="tu-proyecto.firebaseapp.com"/></div>
+        <div class="f"><label>projectId</label><input id="fb-projectId" value="${FIREBASE_CONFIG.projectId}" placeholder="tu-proyecto"/></div>
+        <div class="f"><label>storageBucket</label><input id="fb-storageBucket" value="${FIREBASE_CONFIG.storageBucket}" placeholder="tu-proyecto.appspot.com"/></div>
+        <div class="f"><label>messagingSenderId</label><input id="fb-messagingSenderId" value="${FIREBASE_CONFIG.messagingSenderId}" placeholder="123456789"/></div>
+        <div class="f"><label>appId</label><input id="fb-appId" value="${FIREBASE_CONFIG.appId}" placeholder="1:123:web:abc…"/></div>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn bp2" onclick="saveFBConfig()">🔥 Conectar con Firebase</button>
+        <span style="font-size:11px;color:var(--tx3)">Al guardar, los valores se incrustan en el HTML → súbelo a GitHub</span>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px;border-color:var(--amd);background:rgba(224,122,84,.04)">
+      <div style="font-size:13px;font-weight:700;color:var(--orange);margin-bottom:9px">💾 Copias de seguridad locales</div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap">
+        <button class="btn bp2" onclick="exportData()">💾 Descargar copia .json</button>
+        <label class="btn bo" style="cursor:pointer">📂 Cargar desde archivo <input type="file" accept=".json" style="display:none" onchange="importData(event)"></label>
+        <label class="btn bo" style="cursor:pointer">📊 Importar profesores CSV <input type="file" accept=".csv" style="display:none" onchange="importCSV(event)"></label>
+        <button class="btn bo" style="color:var(--rd);border-color:var(--rdd)" onclick="clearAll()">🗑️ Borrar todos los datos</button>
+      </div>
+    </div>
+  </div>`;
+}
+function saveCfg(){
+  S.center.name=$("cn").value.trim()||"CEIP de Monforte";S.center.year=$("cy").value.trim();
+  S.center.code=$("cc").value.trim();S.center.address=$("ca").value.trim();
+  S.center.phone=$("cp").value.trim();S.center.director=$("cd").value.trim();
+  save(); upd(); toast("Configuración guardada");
+}
+
+// Guarda las credenciales Firebase directamente en el HTML y lo descarga
+function saveFBConfig(){
+  const cfg={
+    apiKey:           ($("fb-apiKey")?.value||"").trim(),
+    authDomain:       ($("fb-authDomain")?.value||"").trim(),
+    projectId:        ($("fb-projectId")?.value||"").trim(),
+    storageBucket:    ($("fb-storageBucket")?.value||"").trim(),
+    messagingSenderId:($("fb-messagingSenderId")?.value||"").trim(),
+    appId:            ($("fb-appId")?.value||"").trim(),
+  };
+  if(!cfg.projectId||!cfg.apiKey){ toast("Rellena al menos apiKey y projectId","err"); return; }
+
+  // Leer el HTML actual, reemplazar el bloque FIREBASE_CONFIG y descargar
+  fetch(location.href)
+    .then(r=>r.text())
+    .then(html=>{
+      const newCfg=`const FIREBASE_CONFIG = {\n  apiKey:            "${cfg.apiKey}",\n  authDomain:        "${cfg.authDomain}",\n  projectId:         "${cfg.projectId}",\n  storageBucket:     "${cfg.storageBucket}",\n  messagingSenderId: "${cfg.messagingSenderId}",\n  appId:             "${cfg.appId}"\n};`;
+      const updated=html.replace(/const FIREBASE_CONFIG = \{[\s\S]*?\};/, newCfg);
+      const a=document.createElement("a");
+      a.href="data:text/html;charset=utf-8,"+encodeURIComponent(updated);
+      a.download="index.html";
+      a.click();
+      toast("✅ index.html descargado con Firebase configurado — súbelo a GitHub");
+    })
+    .catch(()=>{
+      // fallback: guardar en localStorage y mostrar instrucciones
+      localStorage.setItem("ceip_fb_config", JSON.stringify(cfg));
+      toast("Credenciales guardadas localmente. Abre desde un servidor web (GitHub Pages) para que fetch() funcione","warn");
+    });
+}
+
+// ════════════════════════════════════════════════════
+// 2 · PROFESORADO
+// ════════════════════════════════════════════════════
+function pgTeachers(c){
+  c.innerHTML=`
+  <div style="display:grid;grid-template-columns:1fr 286px;gap:13px">
+    <div>
+      <div class="sh2">
+        <div><h1>Profesorado</h1><p>${S.teachers.length} docentes registrados</p></div>
+        <div style="display:flex;gap:7px">
+          <input id="ts" placeholder="Buscar..." style="background:var(--surf2);border:1px solid var(--bd2);border-radius:var(--rs);padding:7px 11px;font-size:13px;color:var(--tx);outline:none;width:180px"/>
+          <button class="btn bp2" onclick="openTm()">+ Añadir profesor</button>
+        </div>
+      </div>
+      ${S.teachers.length===0?`<div class="card"><div class="empty">
+        <div class="ei">👤</div><div class="et">Sin profesores todavía</div>
+        <div class="es">Añade los docentes de tu centro uno a uno,<br>o impórtalos desde un CSV de Excel.</div>
+        <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center">
+          <button class="btn bp2" onclick="openTm()">+ Añadir primer profesor</button>
+          <button class="btn bo" onclick="openCSVHelp()">📊 Importar desde CSV</button>
+        </div>
+        <div style="margin-top:16px;padding:12px;background:var(--surf2);border-radius:var(--rs);text-align:left;font-size:12px;color:var(--tx3);max-width:440px;line-height:1.6">
+          <strong style="color:var(--tx2)">¿Tienes una lista en Excel?</strong><br>
+          Guárdala como CSV (Archivo → Guardar como → CSV UTF-8) con columnas:<br>
+          <code style="color:var(--gr)">nombre, especialidad, horas, jornada</code>
+        </div>
+      </div></div>`:`
+      <div class="card" style="padding:0;overflow:hidden">
+        <table class="tbl"><thead><tr>
+          <th>Nombre</th><th>Especialidad</th><th>Horas</th><th>Jornada</th><th>Cargo</th><th></th>
+        </tr></thead><tbody id="tbdy"></tbody></table>
+      </div>`}
+      ${S.teachers.length>0?`<div style="margin-top:10px;display:flex;gap:7px">
+        <button class="btn bo bsm" onclick="openCSVHelp()">📊 Importar más desde CSV</button>
+      </div>`:""}
+    </div>
+    <div id="tdet" class="card">
+      <div class="empty" style="padding:30px 10px">
+        <div class="ei" style="font-size:32px">👤</div>
+        <div class="et" style="font-size:13px">Selecciona un profesor</div>
+        <div class="es" style="font-size:11px">para ver y editar su disponibilidad</div>
+      </div>
+    </div>
+  </div>`;
+  drawTbl();
+  $("ts")?.addEventListener("input",drawTbl);
+}
+
+function drawTbl(){
+  const q=($("ts")?.value||"").toLowerCase();
+  const tb=$("tbdy"); if(!tb)return;
+  const list=S.teachers.filter(t=>t.name.toLowerCase().includes(q)||(t.spec||"").toLowerCase().includes(q));
+  tb.innerHTML=list.length===0?`<tr><td colspan="6" style="text-align:center;color:var(--tx3);padding:18px">Sin resultados</td></tr>`
+  :list.map(t=>`<tr style="cursor:pointer" onclick="selTeacher('${t.id}')">
+    <td><div style="display:flex;align-items:center;gap:8px">
+      <div class="av2" style="background:${t.color}">${ini(t.name)}</div>
+      <span style="font-weight:600;color:var(--tx)">${t.name}</span>
+    </div></td>
+    <td>${t.spec||"—"}</td><td>${t.hours}h</td>
+    <td><span class="b ${t.pct===100?"bg":"ba"}">${t.pct}%</span></td>
+    <td>${t.dir?'<span class="b br">Dir.</span>':""} ${t.itinerant?'<span class="b bp">Itin.</span>':""}</td>
+    <td style="white-space:nowrap">
+      <button class="btn bgh bsm" onclick="event.stopPropagation();openTm('${t.id}')">✏️</button>
+      <button class="btn bgh bsm" onclick="event.stopPropagation();delT('${t.id}')">🗑️</button>
+    </td>
+  </tr>`).join("");
+}
+
+function selTeacher(id){
+  selT=id;const t=gt(id);if(!t)return;
+  const d=$("tdet");if(!d)return;
+  d.innerHTML=`
+  <div style="display:flex;gap:9px;align-items:center;margin-bottom:13px;padding-bottom:11px;border-bottom:1px solid var(--bd)">
+    <div class="av2" style="background:${t.color};width:40px;height:40px;font-size:13px">${ini(t.name)}</div>
+    <div><div style="font-weight:800;color:var(--tx);font-size:14px">${t.name}</div><div style="font-size:12px;color:var(--tx3)">${t.spec||"Sin especialidad"}</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px">
+    ${[["Horas/sem",t.hours+"h"],["Jornada",t.pct+"%"],["Coord.",(t.coordH||0)+"h"],["Guardias",(t.guardH||0)+"h"],["Apoyo",(t.supportH||0)+"h"],["Reducción",(t.redH||0)+"h"]].map(([l,v])=>`
+    <div style="background:var(--surf2);border-radius:var(--rs);padding:7px 9px">
+      <div style="font-size:9px;color:var(--tx3);font-weight:700;text-transform:uppercase;letter-spacing:.05em">${l}</div>
+      <div style="font-size:14px;font-weight:800;color:var(--tx)">${v}</div>
+    </div>`).join("")}
+  </div>
+  <div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Disponibilidad — clic para cambiar</div>
+  <div class="agrid">
+    ${DAYS.map((d2,di)=>`<div>
+      <div style="font-size:9px;font-weight:800;color:var(--tx3);text-align:center;margin-bottom:3px;text-transform:uppercase">${d2.slice(0,3)}</div>
+      ${S.slots.filter(s=>!s.recess).map(sl=>{const u=t.unavail.some(u=>u.d===di+1&&u.s===sl.n);return`<button class="asl ${u?"au":"av"}" onclick="toggleAv('${t.id}',${di+1},${sl.n})">${sl.n}ª</button>`}).join("")}
+    </div>`).join("")}
+  </div>
+  <div style="display:flex;gap:6px;margin-top:7px">
+    <span style="font-size:10px;font-weight:700;color:var(--gr)">■ Disponible</span>
+    <span style="font-size:10px;font-weight:700;color:#fca5a5">■ No disponible</span>
+  </div>
+  ${t.notes?`<div style="margin-top:9px;font-size:11px;color:var(--tx3);padding-top:9px;border-top:1px solid var(--bd)">${t.notes}</div>`:""}`;
+}
+
+function toggleAv(tid,day,slot){const t=gt(tid);if(!t)return;const i=t.unavail.findIndex(u=>u.d===day&&u.s===slot);i>=0?t.unavail.splice(i,1):t.unavail.push({d:day,s:slot});selTeacher(tid);}
+
+function openTm(id){
+  const t=id?gt(id):null;
+  om(`<div class="mb">
+  <div class="mt">${t?"Editar profesor":"Nuevo profesor"} <button class="btn bgh" onclick="cm()">✕</button></div>
+  <div style="display:flex;flex-direction:column;gap:11px">
+    <div class="g2"><div class="f"><label>Nombre completo *</label><input id="tn" value="${t?.name||""}" placeholder="Ej: Ana García López"/></div>
+    <div class="f"><label>Especialidad / Cargo</label><input id="ts2" value="${t?.spec||""}" placeholder="Tutora 3ºA · Ed. Física · PT"/></div></div>
+    <div class="g3" style="gap:10px">
+      <div class="f"><label>Horas/semana</label><input id="th" type="number" value="${t?.hours||25}" min="1" max="40"/></div>
+      <div class="f"><label>% Jornada</label><input id="tp" type="number" value="${t?.pct||100}" min="10" max="100"/></div>
+      <div class="f"><label>H. reducción</label><input id="tr" type="number" value="${t?.redH||0}" min="0"/></div>
+    </div>
+    <div class="g3" style="gap:10px">
+      <div class="f"><label>H. coordinación</label><input id="tco" type="number" value="${t?.coordH||3}" min="0"/></div>
+      <div class="f"><label>H. guardias</label><input id="tg" type="number" value="${t?.guardH||2}" min="0"/></div>
+      <div class="f"><label>H. apoyo/refuerzo</label><input id="tsu" type="number" value="${t?.supportH||0}" min="0"/></div>
+    </div>
+    <div class="g2">
+      <div class="f"><label>H. biblioteca</label><input id="tl" type="number" value="${t?.libH||0}" min="0"/></div>
+      <div class="f"><label>H. liberación cargo</label><input id="tre" type="number" value="${t?.releaseH||0}" min="0"/></div>
+    </div>
+    <div style="display:flex;gap:18px;flex-wrap:wrap">
+      <label class="cbr"><input type="checkbox" id="tdir" ${t?.dir?"checked":""}> Cargo directivo</label>
+      <label class="cbr"><input type="checkbox" id="tjef" ${t?.jef?"checked":""}> Jefatura de estudios</label>
+      <label class="cbr"><input type="checkbox" id="titin" ${t?.itinerant?"checked":""}> Itinerante</label>
+    </div>
+    <div class="f"><label>Motivo de reducción</label>
+      <select id="tred"><option value="">Sin reducción</option>
+        <option value="age" ${t?.redType==="age"?"selected":""}>Por edad (≥55 años)</option>
+        <option value="union" ${t?.redType==="union"?"selected":""}>Sindical</option>
+        <option value="medical" ${t?.redType==="medical"?"selected":""}>Médica</option>
+        <option value="other" ${t?.redType==="other"?"selected":""}>Otra causa</option>
+      </select>
+    </div>
+    <div class="f"><label>Notas / Observaciones</label>
+      <textarea id="tno" rows="2" style="resize:vertical" placeholder="Días de itinerancia, notas especiales...">${t?.notes||""}</textarea>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:7px;margin-top:4px">
+      <button class="btn bo" onclick="cm()">Cancelar</button>
+      <button class="btn bp2" onclick="saveT('${id||""}')">${t?"Guardar cambios":"Añadir profesor"}</button>
+    </div>
+  </div></div>`);
+}
+
+function saveT(id){
+  const name=$("tn").value.trim();if(!name){toast("El nombre es obligatorio","err");return;}
+  const d={name,spec:$("ts2").value.trim(),hours:+$("th").value||25,pct:+$("tp").value||100,redH:+$("tr").value||0,coordH:+$("tco").value||0,guardH:+$("tg").value||0,supportH:+$("tsu").value||0,libH:+$("tl").value||0,releaseH:+$("tre").value||0,dir:$("tdir").checked,jef:$("tjef").checked,itinerant:$("titin").checked,redType:$("tred").value,notes:$("tno").value.trim()};
+  if(id){const t=gt(id);Object.assign(t,d);toast("Cambios guardados");}
+  else{d.id=uid();d.color=CLRS[S.teachers.length%CLRS.length];d.unavail=[];d.groupIds=[];S.teachers.push(d);toast("Profesor añadido");}
+  cm();navigate("teachers");
+}
+function delT(id){if(!confirm("¿Eliminar este profesor?"))return;S.teachers=S.teachers.filter(t=>t.id!==id);navigate("teachers");toast("Profesor eliminado","warn");}
+
+function importCSV(e){
+  const file=e.target.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    const lines=ev.target.result.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+    if(lines.length<2){toast("CSV vacío o sin cabecera","err");return;}
+
+    const norm=s=>s.toLowerCase().trim()
+      .replace(/[áàä]/g,"a").replace(/[éèë]/g,"e").replace(/[íìï]/g,"i")
+      .replace(/[óòö]/g,"o").replace(/[úùü]/g,"u").replace(/[ñ]/g,"n")
+      .replace(/[^a-z0-9\/]/g,"");
+
+    const hds =lines[0].split(",").map(h=>h.replace(/^"|"$/g,"").trim());
+    const hdsN=hds.map(norm);
+
+    const iNombre=hdsN.findIndex(h=>h==="nombre"||h==="profesor"||h==="docente");
+    const iCurso =hdsN.findIndex(h=>h.includes("curso")||h.includes("especialidad")||h.includes("tutor"));
+    const iTotal =hdsN.findIndex(h=>h==="total");
+    const iLibres=hdsN.findIndex(h=>h==="libres"||h.includes("libres"));
+    const iGardas=hdsN.findIndex(h=>h==="gardas"||h.includes("guardia"));
+    const iTP    =hdsN.findIndex(h=>h==="tp");
+    const iObs   =hdsN.findIndex(h=>h.includes("observ")||h.includes("nota"));
+
+    // Detectar columnas de materias automáticamente
+    const FIXED_KEYS=["nombre","profesor","docente","curso","especialidad","tutor","total","libres","gardas","guardia","tp","observ","nota","ocio","acio"];
+    const materiasCols=hdsN.map((h,i)=>{
+      if(FIXED_KEYS.some(f=>h.includes(f))) return null;
+      const subj=matchMateria(hds[i]);
+      return subj?{idx:i,subj}:null;
+    }).filter(Boolean);
+
+    let added=0,updated=0;
+    for(let i=1;i<lines.length;i++){
+      const cols=lines[i].split(",").map(c=>c.replace(/^"|"$/g,"").trim());
+      const get=idx=>(idx>=0&&idx<cols.length)?cols[idx]:"";
+
+      const nombre=get(iNombre);
+      if(!nombre)continue;
+
+      // Sumar horas lectivas por materias
+      let horasLect=0;
+      materiasCols.forEach(m=>{ horasLect+=parseInt(get(m.idx))||0; });
+
+      const gardasV=parseInt(get(iGardas))||0;
+      const tpV    =parseInt(get(iTP))    ||0;
+      const totalV =parseInt(get(iTotal)) ||(horasLect+gardasV+tpV);
+      const libresV=parseInt(get(iLibres))||0;
+      const cursoV =get(iCurso);
+      const obsV   =get(iObs);
+      const pct    =libresV>=10?50:100;
+
+      const tData={
+        name:nombre, spec:cursoV||"",
+        hours:totalV||23, pct,
+        guardH:gardasV, supportH:tpV, libH:libresV,
+        coordH:0, releaseH:0, redH:0,
+        dir:false, jef:false, itinerant:false,
+        unavail:[], groupIds:[], notes:obsV,
+      };
+
+      const existing=S.teachers.find(t=>
+        norm(t.name)===norm(nombre)||
+        norm(t.name).startsWith(norm(nombre.split(" ")[0]))
+      );
+      if(existing){ Object.assign(existing,tData); updated++; }
+      else{ tData.id=uid(); tData.color=CLRS[S.teachers.length%CLRS.length]; S.teachers.push(tData); added++; }
+    }
+    save();
+    toast(`${added} profesores añadidos · ${updated} actualizados`);
+    navigate("teachers");
+  };
+  r.readAsText(file,"UTF-8");
+  e.target.value="";
+}
+
+function openCSVHelp(){
+  om(`<div class="mb w">
+  <div class="mt">Importar profesores desde Excel / CSV <button class="btn bgh" onclick="cm()">✕</button></div>
+  <div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:10px">
+    La plantilla tiene el mismo formato que tu tabla de Excel del centro. Rellena los datos y guarda como
+    <strong style="color:var(--tx)">CSV UTF-8 con BOM</strong> (Archivo → Guardar como → CSV UTF-8 (con BOM)).
+  </div>
+  <div style="font-size:12px;color:var(--tx3);margin-bottom:8px;font-weight:700">Columnas de la plantilla:</div>
+  <div style="background:var(--surf2);border-radius:var(--rs);padding:9px 11px;font-size:11px;color:var(--tx2);margin-bottom:11px;line-height:2">
+    <span style="color:var(--coral);font-weight:700">Nombre</span> ·
+    <span style="color:var(--orange);font-weight:700">Curso/Especialidad</span> ·
+    <span style="color:var(--sage);font-weight:700">Lengua Gallega · Lengua Castellana · Matemáticas · Sociales · Naturales · Inglés · Plástica · Música · Ocio · Religión</span> ·
+    <span style="color:var(--slate2);font-weight:700">Gardas · TP · Total · Libres</span> ·
+    <span style="color:var(--tx3)">Observaciones</span>
+  </div>
+  <div style="font-size:11px;color:var(--tx3);margin-bottom:13px;line-height:1.6">
+    Solo <strong style="color:var(--tx)">Nombre</strong> es obligatorio. Las horas de cada materia se suman para calcular el total lectivo.
+    Si ya existe un profesor con el mismo nombre, sus datos se actualizan en lugar de duplicarse.
+  </div>
+  <div style="display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap">
+    <button class="btn bo" onclick="dlCSVTpl()">⬇️ Descargar plantilla CSV</button>
+    <label class="btn bp2" style="cursor:pointer">📊 Seleccionar mi CSV
+      <input type="file" accept=".csv" style="display:none" onchange="importCSV(event);cm()">
+    </label>
+  </div></div>`);
+}
+
+function dlCSVTpl(){
+  const header="Nombre,Curso/Especialidad,Lengua Gallega,Lengua Castellana,Matemáticas,Sociales,Naturales,Inglés,Plástica,Música,Ocio,Religión,Gardas,TP,Total,Libres,Observaciones";
+  const ejemplos=[
+    "Silvia López,1ºA,4,4,5,2,3,0,1,0,0,1,1,0,22,1,Tutor 1ºA",
+    "Arancha Inglés,1ºB,4,4,0,2,3,10,1,0,0,0,1,0,22,1,Coord. Pluri",
+    "Bea AL,2ºA,4,4,5,3,2,0,0,0,0,1,1,1,21,2,Apoyos",
+    "Ana Armesto,2ºB,4,4,5,3,2,0,0,0,0,1,1,0,20,3,Apoyos",
+    "Diego,,0,0,0,0,0,19,0,0,0,0,1,1,21,2,Coordinación Pluri",
+    "Oscar,Educación Física,0,0,0,0,0,0,0,0,12,0,5,1,19,4,2 comedor 1 EDIXGAL",
+    "Richi,Educación Física,0,0,0,0,0,0,0,0,18,0,1,1,20,3,Polos y PD",
+    "Mike,Música,0,0,4,2,0,0,0,15,0,0,1,1,23,0,Completo",
+    "Mikel,,22,0,0,0,0,0,0,0,0,0,1,0,23,0,PT",
+    "RELIGION,,0,0,0,0,0,0,0,0,0,17,0,0,17,6,FALTA SABER DIA",
+  ];
+  const csv=[header,...ejemplos].join("\n");
+  const a=document.createElement("a");
+  a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);
+  a.download="plantilla_profesores_monforte.csv";
+  a.click();
+  toast("Plantilla descargada");
+}
+
+// ════════════════════════════════════════════════════
+// 3 · GRUPOS
+// ════════════════════════════════════════════════════
+function pgGroups(c){
+  c.innerHTML=`
+  <div class="sh2"><div><h1>Grupos / Clases</h1><p>${S.groups.length} unidades</p></div>
+  <button class="btn bp2" onclick="openGm()">+ Añadir grupo</button></div>
+  ${S.groups.length===0?`<div class="card"><div class="empty">
+    <div class="ei">🏫</div><div class="et">Sin grupos todavía</div>
+    <div class="es">Añade las unidades de tu centro.<br>Usa los botones rápidos de abajo para añadir grupos estándar.</div>
+  </div></div>`:`<div class="ga" id="gg">${S.groups.map(g=>{const tu=g.tutorId?gt(g.tutorId):null;const cur=S.curriculum[g.id]||[];return`<div class="card">
+    <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+      <div style="font-size:22px;font-weight:800;color:var(--tx)">${g.name}</div>
+      <div style="display:flex;gap:3px">${g.level==="infantil"?'<span class="b bp">Inf</span>':'<span class="b bg">Pri</span>'}${g.bilingual?'<span class="b bb">Bil</span>':""}</div>
+    </div>
+    <div style="font-size:12px;color:var(--tx3)">${tu?tu.name:"Sin tutor/a"}</div>
+    <div style="font-size:11px;color:var(--tx3);margin-top:2px">${g.students||25} alumnos · ${cur.length} materias</div>
+    <div style="display:flex;gap:5px;margin-top:9px">
+      <button class="btn bo bsm" onclick="openGm('${g.id}')">✏️</button>
+      <button class="btn bgh bsm" onclick="delG('${g.id}')">🗑️</button>
+    </div>
+  </div>`;}).join("")}</div>`}
+  <div style="margin-top:12px;display:flex;gap:7px;flex-wrap:wrap">
+    <span style="font-size:12px;color:var(--tx3);align-self:center">Añadir rápido:</span>
+    <button class="btn bo bsm" onclick="addDef('inf')">+ Infantil (I3A · I4A · I5A)</button>
+    <button class="btn bo bsm" onclick="addDef('p1')">+ Primaria 1 línea (1ºA→6ºA)</button>
+    <button class="btn bo bsm" onclick="addDef('p2')">+ Primaria 2 líneas (A+B)</button>
+  </div>`;
+}
+
+function addDef(t){
+  const defs={
+    inf:[{n:"I-3A",lv:"infantil",gr:3,se:"A"},{n:"I-4A",lv:"infantil",gr:4,se:"A"},{n:"I-5A",lv:"infantil",gr:5,se:"A"}],
+    p1:[1,2,3,4,5,6].map(g=>({n:g+"ºA",lv:"primaria",gr:g,se:"A"})),
+    p2:[1,2,3,4,5,6].flatMap(g=>[{n:g+"ºA",lv:"primaria",gr:g,se:"A"},{n:g+"ºB",lv:"primaria",gr:g,se:"B"}]),
+  };
+  let n=0;
+  (defs[t]||[]).forEach(d=>{
+    if(!S.groups.find(g=>g.name===d.n)){
+      const newId=uid();
+      S.groups.push({id:newId,name:d.n,level:d.lv,grade:d.gr,section:d.se,tutorId:null,students:25,bilingual:false});
+      applyCurriculumTemplate(newId, d.gr, d.lv);
+      n++;
+    }
+  });
+  toast(`${n} grupos añadidos con curriculum predefinido`);
+  navigate("groups");
+}
+
+function openGm(id){
+  const g=id?gg(id):null;
+  const tOpts=`<option value="">Sin tutor/a</option>`+S.teachers.map(t=>`<option value="${t.id}" ${g?.tutorId===t.id?"selected":""}>${t.name}</option>`).join("");
+  om(`<div class="mb"><div class="mt">${g?"Editar grupo":"Nuevo grupo"} <button class="btn bgh" onclick="cm()">✕</button></div>
+  <div style="display:flex;flex-direction:column;gap:11px">
+    <div class="g2">
+      <div class="f"><label>Nombre del grupo *</label><input id="gn" value="${g?.name||""}" placeholder="Ej: 3ºA · I-4B · 5ºC"/></div>
+      <div class="f"><label>Nivel</label><select id="glv"><option value="primaria" ${!g||g.level==="primaria"?"selected":""}>Primaria</option><option value="infantil" ${g?.level==="infantil"?"selected":""}>Infantil</option></select></div>
+    </div>
+    <div class="g3" style="gap:10px">
+      <div class="f"><label>Curso</label><input id="ggr" type="number" value="${g?.grade||1}" min="1" max="6"/></div>
+      <div class="f"><label>Sección</label><input id="gse" value="${g?.section||"A"}" maxlength="2"/></div>
+      <div class="f"><label>Nº alumnos</label><input id="gst" type="number" value="${g?.students||25}" min="1" max="50"/></div>
+    </div>
+    <div class="f"><label>Tutor/a asignado/a</label><select id="gtu">${tOpts}</select></div>
+    <label class="cbr"><input type="checkbox" id="gbil" ${g?.bilingual?"checked":""}> Grupo bilingüe</label>
+    <div style="display:flex;justify-content:flex-end;gap:7px;margin-top:4px">
+      <button class="btn bo" onclick="cm()">Cancelar</button>
+      <button class="btn bp2" onclick="saveG('${id||""}')">${g?"Guardar cambios":"Añadir grupo"}</button>
+    </div>
+  </div></div>`);
+}
+function saveG(id){
+  const name=$("gn").value.trim();if(!name){toast("Nombre obligatorio","err");return;}
+  const d={name,level:$("glv").value,grade:+$("ggr").value||1,section:$("gse").value||"A",tutorId:$("gtu").value||null,students:+$("gst").value||25,bilingual:$("gbil").checked};
+  if(id){
+    Object.assign(gg(id),d);
+    toast("Grupo actualizado");
+  } else {
+    const newId=uid();
+    S.groups.push({id:newId,...d});
+    // Aplicar plantilla de curriculum según el curso
+    applyCurriculumTemplate(newId, d.grade, d.level);
+    toast("Grupo añadido con curriculum predefinido");
+  }
+  cm();navigate("groups");
+}
+
+// Aplica la plantilla de curriculum oficial al grupo recién creado
+function applyCurriculumTemplate(gid, grade, level){
+  if(level==="infantil") return; // Infantil no tiene plantilla
+  const key = grade+"º";
+  const tpl = S._curriculumTemplates?.[key];
+  if(!tpl) return;
+  // Solo copia materias con sesiones > 0
+  S.curriculum[gid] = tpl
+    .filter(e=>e.sessions>0)
+    .map(e=>({sid:e.sid, tid:"", sessions:e.sessions}));
+}
+function delG(id){if(!confirm("¿Eliminar este grupo?"))return;S.groups=S.groups.filter(g=>g.id!==id);delete S.curriculum[id];navigate("groups");toast("Grupo eliminado","warn");}
+
+// ════════════════════════════════════════════════════
+// 4 · MATERIAS
+// ════════════════════════════════════════════════════
+function pgSubjects(c){
+  c.innerHTML=`<div class="sh2"><div><h1>Materias</h1><p>${S.subjects.length} materias configuradas (12 predefinidas)</p></div><button class="btn bp2" onclick="openSm()">+ Añadir materia</button></div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="tbl"><thead><tr><th>Código</th><th>Nombre</th><th>Color</th><th>Tipo</th><th></th></tr></thead><tbody>
+    ${S.subjects.map((s,i)=>`<tr>
+      <td><code style="background:var(--surf2);padding:2px 7px;border-radius:4px;font-family:'DM Mono',monospace;font-size:11px;color:${s.tx}">${s.code}</code></td>
+      <td style="font-weight:600;color:${s.tx}">${s.name}</td>
+      <td><div style="width:26px;height:13px;background:${s.bg};border:1px solid ${s.bd};border-radius:3px"></div></td>
+      <td>${s.instr?'<span class="b ba">Instrumental</span>':'<span class="b bk">Normal</span>'}</td>
+      <td style="white-space:nowrap"><button class="btn bgh bsm" onclick="openSm('${s.id}')">✏️</button><button class="btn bgh bsm" onclick="delS('${s.id}')">🗑️</button></td>
+    </tr>`).join("")}
+    </tbody></table>
+  </div>`;
+}
+function openSm(id){
+  const s=id?gs(id):null;
+  const ci=s?BGCS.findIndex(b=>b[0]===s.bg):0;
+  const cn=["Rojo","Ámbar","Azul","Verde","Cian","Morado","Rosa","Naranja oscuro","Naranja","Gris","Violeta","Turquesa"];
+  const co=BGCS.map((b,i)=>`<option value="${i}" ${i===(ci<0?0:ci)?"selected":""}>${cn[i]||"Color "+i}</option>`).join("");
+  om(`<div class="mb"><div class="mt">${s?"Editar":"Nueva"} materia <button class="btn bgh" onclick="cm()">✕</button></div>
+  <div style="display:flex;flex-direction:column;gap:11px">
+    <div class="g2">
+      <div class="f"><label>Código *</label><input id="sc" value="${s?.code||""}" placeholder="Ej: MAT" maxlength="6" style="text-transform:uppercase"/></div>
+      <div class="f"><label>Nombre *</label><input id="sn" value="${s?.name||""}" placeholder="Ej: Matemáticas"/></div>
+    </div>
+    <div class="f"><label>Color de visualización en el horario</label><select id="scol">${co}</select></div>
+    <label class="cbr"><input type="checkbox" id="sinst" ${s?.instr?"checked":""}> Materia instrumental (MAT, LEN → preferencia por mañana)</label>
+    <div style="display:flex;justify-content:flex-end;gap:7px;margin-top:4px">
+      <button class="btn bo" onclick="cm()">Cancelar</button>
+      <button class="btn bp2" onclick="saveS('${id||""}')">${s?"Guardar":"Añadir"}</button>
+    </div>
+  </div></div>`);
+}
+function saveS(id){
+  const code=$("sc").value.trim().toUpperCase(),name=$("sn").value.trim();
+  if(!code||!name){toast("Código y nombre obligatorios","err");return;}
+  const ci=+$("scol").value;const[bg,tx,bd]=BGCS[ci]||BGCS[0];const instr=$("sinst").checked;
+  if(id){const s=gs(id);Object.assign(s,{code,name,bg,tx,bd,instr});toast("Materia actualizada");}
+  else{S.subjects.push({id:uid(),code,name,bg,tx,bd,instr});toast("Materia añadida");}
+  cm();navigate("subjects");
+}
+function delS(id){if(!confirm("¿Eliminar esta materia?"))return;S.subjects=S.subjects.filter(s=>s.id!==id);navigate("subjects");toast("Materia eliminada","warn");}
+
+// ════════════════════════════════════════════════════
+// 5 · CURRICULUM
+// ════════════════════════════════════════════════════
+function pgCurriculum(c){
+  if(S.groups.length===0){c.innerHTML=`<div class="card"><div class="empty"><div class="ei">📚</div><div class="et">Primero crea los grupos</div><div class="es">Ve a Grupos y añade las unidades del centro.</div><button class="btn bp2" style="margin-top:12px" onclick="navigate('groups')">Ir a Grupos →</button></div></div>`;return;}
+  if(!curGid||!gg(curGid))curGid=S.groups[0].id;
+
+  // Tabla resumen de horas oficial
+  const tablaOficial=[
+    ["Ciencias de la Naturaleza",       [3,2,3,2,3,2]],
+    ["Ciencias Sociales",               [2,3,2,3,2,2]],
+    ["Ed. en Valores Cívicos y Éticos", [0,0,0,0,0,1]],
+    ["Educación Física",                [2,2,2,2,2,2]],
+    ["Educación Plástica y Visual",     [1,1,1,1,1,1]],
+    ["Lengua Castellana y Literatura",  [4,4,4,4,4,4]],
+    ["Lengua Extranjera",               [2,2,3,3,3,3]],
+    ["Lengua Gallega y Literatura",     [4,4,4,4,4,4]],
+    ["Matemáticas",                     [5,5,4,4,4,4]],
+    ["Música y Danza",                  [1,1,1,1,1,1]],
+    ["Religión/Proyecto Competencial",  [1,1,1,1,1,1]],
+  ];
+
+  c.innerHTML=`
+  <div class="sh2">
+    <div><h1>Curriculum</h1><p>Sesiones semanales por grupo · basado en la tabla oficial del centro</p></div>
+    <button class="btn bp2" onclick="openCm()">+ Asignar materia</button>
+  </div>
+
+  <!-- Tabla oficial de referencia -->
+  <details style="margin-bottom:14px">
+    <summary style="cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--tx2);list-style:none;padding:11px 14px;background:var(--surf2);border:1px solid var(--bd2);border-radius:var(--rs)">
+      <span>📋</span> Ver tabla oficial de horas por curso (clic para desplegar)
+    </summary>
+    <div style="overflow-x:auto;margin-top:6px">
+      <table class="tbl" style="font-size:12px">
+        <thead><tr>
+          <th style="min-width:220px">Área</th>
+          ${[1,2,3,4,5,6].map(g=>`<th style="text-align:center">${g}º</th>`).join("")}
+          <th></th>
+        </tr></thead>
+        <tbody>
+        ${tablaOficial.map(([name,hrs])=>`<tr>
+          <td style="color:var(--tx)">${name}</td>
+          ${hrs.map(h=>`<td style="text-align:center;font-weight:700;color:${h===0?"var(--tx3)":h>=4?"var(--coral2)":h>=3?"var(--orange)":"var(--tx2)"}">${h||"—"}</td>`).join("")}
+          <td><span class="b bk">${hrs.reduce((a,b)=>a+b,0)} tot.</span></td>
+        </tr>`).join("")}
+        </tbody>
+        <tfoot><tr>
+          <td style="font-weight:800;color:var(--tx)">Total</td>
+          ${[1,2,3,4,5,6].map((_,i)=>`<td style="text-align:center;font-weight:800;color:var(--sage)">25</td>`).join("")}
+          <td></td>
+        </tr></tfoot>
+      </table>
+    </div>
+  </details>
+
+  <!-- Selector de grupo -->
+  <div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap">
+    ${S.groups.map(g=>`<span class="chip ${g.id===curGid?"on":""}" onclick="curGid='${g.id}';drawCur()">${g.name}</span>`).join("")}
+  </div>
+  <div id="curb"></div>`;
+  drawCur();
+}
+
+function drawCur(){
+  const b=$("curb");if(!b)return;
+  const es=S.curriculum[curGid]||[];
+  const tot=es.reduce((a,e)=>a+e.sessions,0);
+  const g=gg(curGid);
+  if(es.length===0){
+    b.innerHTML=`<div class="card"><div class="empty">
+      <div class="ei">📚</div>
+      <div class="et">Sin materias para ${g?.name}</div>
+      <div class="es">
+        ${g?.level==="primaria"?`Este grupo es de <strong style="color:var(--tx)">Primaria ${g.grade}º</strong>.<br>Puedes aplicar directamente las horas oficiales.`:"Asigna materias y sesiones semanales."}
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center">
+        ${g?.level==="primaria"?`<button class="btn bp2" onclick="restoreTemplate('${curGid}',${g?.grade})">📋 Aplicar horas oficiales ${g?.grade}º</button>`:""}
+        <button class="btn bo" onclick="openCm()">+ Añadir materia manual</button>
+      </div>
+    </div></div>`;
+    return;
+  }
+
+  const ok=tot>=25&&tot<=25;
+  b.innerHTML=`<div class="card" style="padding:0;overflow:hidden">
+  <div style="padding:11px 14px;background:var(--surf2);border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <span style="font-size:13px;font-weight:700;color:var(--tx)">Grupo ${g?.name} — ${es.length} materias · <strong style="color:${ok?"var(--sage)":"var(--orange)"}">${tot}/25</strong> ses/sem</span>
+    <div style="display:flex;gap:7px;align-items:center">
+      ${ok?'<span class="b bg">✓ Total correcto</span>':'<span class="b ba">⚠ Revisar total (debe ser 25)</span>'}
+      ${g?.level==="primaria"?`<button class="btn bo bsm" onclick="restoreTemplate('${curGid}',${g?.grade})" title="Restaurar horas según tabla oficial">↺ Restaurar oficial</button>`:""}
+    </div>
+  </div>
+  <table class="tbl"><thead><tr>
+    <th>Materia</th><th>Código</th><th>Profesor/a</th><th style="text-align:center">Ses/sem</th><th style="text-align:center">Oficial ${g?.grade}º</th><th></th>
+  </tr></thead><tbody>
+  ${es.map((e,i)=>{
+    const s=S.subjects.find(s2=>s2.id===e.sid);
+    const t=gt(e.tid);
+    // Buscar horas oficiales para comparar
+    const tpl=(S._curriculumTemplates?.[g?.grade+"º"]||[]).find(x=>x.sid===e.sid);
+    const oficial=tpl?tpl.sessions:null;
+    const diff=oficial!==null?e.sessions-oficial:null;
+    return`<tr>
+      <td><span style="font-weight:700;color:${s?.tx||"var(--tx)"}">${s?.name||e.sid}</span></td>
+      <td><code style="background:var(--surf2);padding:2px 6px;border-radius:4px;font-family:'DM Mono',monospace;font-size:11px;color:${s?.tx||"var(--tx2)"}">${s?.code||"—"}</code></td>
+      <td>${t?`<div style="display:flex;align-items:center;gap:6px"><div class="av2" style="background:${t.color};width:22px;height:22px;font-size:9px">${ini(t.name)}</div><span style="font-size:12px">${t.name}</span></div>`:`<button class="btn bo bsm" onclick="openAsignProf('${curGid}',${i})">+ Asignar profesor</button>`}</td>
+      <td style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:5px">
+        <button class="btn bgh bsm" onclick="chS('${curGid}',${i},-1)">−</button>
+        <span class="b bb" style="min-width:24px;justify-content:center;font-size:12px">${e.sessions}</span>
+        <button class="btn bgh bsm" onclick="chS('${curGid}',${i},1)">+</button>
+      </div></td>
+      <td style="text-align:center">
+        ${oficial!==null?`<span style="font-size:12px;color:${diff===0?"var(--sage)":diff!==0?"var(--orange)":"var(--tx3)"};font-weight:700">${oficial}h ${diff!==0&&diff!==null?(diff>0?"▲"+diff:"▼"+Math.abs(diff)):""}</span>`:`<span style="color:var(--tx3)">—</span>`}
+      </td>
+      <td><button class="btn bgh bsm" onclick="delC('${curGid}',${i})">🗑️</button></td>
+    </tr>`;
+  }).join("")}
+  </tbody></table></div>`;
+}
+
+// Restaura el curriculum oficial para un grupo
+function restoreTemplate(gid, grade){
+  if(!confirm(`¿Restaurar las horas oficiales para ${grade}º?\nSe mantendrán los profesores ya asignados pero se actualizarán las sesiones.`)) return;
+  applyCurriculumTemplate(gid, grade, "primaria");
+  // Conservar profesores ya asignados
+  const old=S.curriculum[gid]||[];
+  const tpl=S._curriculumTemplates?.[grade+"º"]||[];
+  S.curriculum[gid]=tpl.filter(e=>e.sessions>0).map(e=>{
+    const prev=old.find(o=>o.sid===e.sid);
+    return {sid:e.sid, tid:prev?.tid||"", sessions:e.sessions};
+  });
+  drawCur(); save();
+  toast(`Horas oficiales de ${grade}º restauradas`);
+}
+
+// Modal rápido para asignar profesor a una materia del curriculum
+function openAsignProf(gid, idx){
+  const tOpts=`<option value="">Sin asignar</option>`+S.teachers.map(t=>`<option value="${t.id}">${t.name}</option>`).join("");
+  const e=S.curriculum[gid]?.[idx]; if(!e)return;
+  const s=S.subjects.find(s2=>s2.id===e.sid);
+  om(`<div class="mb"><div class="mt">Asignar profesor — ${s?.name||"Materia"} <button class="btn bgh" onclick="cm()">✕</button></div>
+  <div style="display:flex;flex-direction:column;gap:11px">
+    <div class="f"><label>Profesor/a responsable</label><select id="ap-t">${tOpts}</select></div>
+    <div style="display:flex;justify-content:flex-end;gap:7px">
+      <button class="btn bo" onclick="cm()">Cancelar</button>
+      <button class="btn bp2" onclick="S.curriculum['${gid}'][${idx}].tid=$('ap-t').value;cm();drawCur();save();toast('Profesor asignado')">Asignar</button>
+    </div>
+  </div></div>`);
+}
+function chS(g,i,d){const e=S.curriculum[g]?.[i];if(e)e.sessions=Math.max(1,Math.min(10,e.sessions+d));drawCur();}
+function delC(g,i){S.curriculum[g]?.splice(i,1);drawCur();toast("Materia eliminada");}
+function openCm(){
+  const sOpts=S.subjects.map(s=>`<option value="${s.id}">${s.name} (${s.code})</option>`).join("");
+  const tOpts=`<option value="">Sin asignar</option>`+S.teachers.map(t=>`<option value="${t.id}">${t.name}</option>`).join("");
+  const gOpts=S.groups.map(g=>`<option value="${g.id}" ${g.id===curGid?"selected":""}>${g.name}</option>`).join("");
+  om(`<div class="mb"><div class="mt">Asignar materia a grupo <button class="btn bgh" onclick="cm()">✕</button></div>
+  <div style="display:flex;flex-direction:column;gap:11px">
+    <div class="f"><label>Grupo</label><select id="cmg">${gOpts}</select></div>
+    <div class="f"><label>Materia</label><select id="cms">${sOpts}</select></div>
+    <div class="f"><label>Profesor/a responsable</label><select id="cmt">${tOpts}</select></div>
+    <div class="f"><label>Sesiones por semana</label><input id="cmn" type="number" value="2" min="1" max="10"/></div>
+    <div style="display:flex;justify-content:flex-end;gap:7px;margin-top:4px">
+      <button class="btn bo" onclick="cm()">Cancelar</button>
+      <button class="btn bp2" onclick="saveCur()">Asignar</button>
+    </div>
+  </div></div>`);
+}
+function saveCur(){
+  const g=$("cmg").value,s=$("cms").value,t=$("cmt").value,n=+$("cmn").value||2;
+  if(!g||!s){toast("Selecciona grupo y materia","err");return;}
+  if(!S.curriculum[g])S.curriculum[g]=[];
+  const ex=S.curriculum[g].findIndex(e=>e.sid===s);
+  if(ex>=0){S.curriculum[g][ex].sessions=n;S.curriculum[g][ex].tid=t;}else S.curriculum[g].push({sid:s,tid:t,sessions:n});
+  curGid=g;cm();navigate("curriculum");toast("Curriculum actualizado");
+}
+
+// ════════════════════════════════════════════════════
+// ASISTENTE DE ASIGNACIÓN DE PROFESORES
+// ════════════════════════════════════════════════════
+
+// Materias que normalmente imparte un especialista (no el tutor)
+const ESPECIALISTAS_CODES = ["EF","LEX","MUS","REL","PT","EVCE","PLST"];
+
+// Tabla de alias para reconocer materias desde el CSV con nombres variados
+const MATERIA_ALIAS={
+  "lingua galega":"LGL","lengua gallega":"LGL","galego":"LGL","lg":"LGL",
+  "lingua castelá":"LCL","lingua castellana":"LCL","lengua castellana":"LCL","lengua castelá":"LCL","lc":"LCL","lcl":"LCL",
+  "matemáticas":"MAT","matematicas":"MAT","mates":"MAT","mat":"MAT",
+  "inglés":"LEX","ingles":"LEX","lengua extranjera":"LEX","ing":"LEX","lex":"LEX",
+  "ciencias naturales":"CN","naturais":"CN","ciencias da natureza":"CN","ciencias de la naturaleza":"CN","cn":"CN",
+  "ciencias sociales":"CS","sociais":"CS","cs":"CS",
+  "educación física":"EF","educacion fisica":"EF","ef":"EF",
+  "plástica":"PLST","plastica":"PLST","educación plástica":"PLST","educacion plastica":"PLST","plst":"PLST",
+  "música":"MUS","musica":"MUS","música y danza":"MUS","mus":"MUS",
+  "religión":"REL","religion":"REL","relixión":"REL","relixion":"REL","proxecto competencial":"REL","religión/proxecto":"REL","relixion/proxecto":"REL","rel":"REL",
+  "tutoría":"TUT","tutoria":"TUT","tut":"TUT",
+  "valores cívicos":"EVCE","valores civicos":"EVCE","educación en valores":"EVCE","evce":"EVCE",
+  "apoyo pt":"PT","apoyo":"PT","pt":"PT","al":"PT","pt/al":"PT",
+};
+
+function matchMateria(raw){
+  const key=raw.toLowerCase().trim()
+    .replace(/[áàä]/g,"a").replace(/[éèë]/g,"e").replace(/[íìï]/g,"i")
+    .replace(/[óòö]/g,"o").replace(/[úùü]/g,"u").replace(/ñ/g,"n");
+  if(MATERIA_ALIAS[key]) return S.subjects.find(s=>s.code===MATERIA_ALIAS[key]);
+  // Búsqueda parcial
+  for(const [alias,code] of Object.entries(MATERIA_ALIAS)){
+    if(key.includes(alias)||alias.includes(key)) return S.subjects.find(s=>s.code===code);
+  }
+  // Por nombre directo en subjects
+  return S.subjects.find(s=>s.name.toLowerCase().includes(key)||s.code.toLowerCase()===key);
+}
+
+function matchProfesor(raw){
+  if(!raw||!raw.trim())return null;
+  const key=raw.toLowerCase().trim();
+  // Búsqueda exacta primero
+  let t=S.teachers.find(t=>t.name.toLowerCase()===key);
+  if(t)return t;
+  // Por primer nombre o apellido
+  t=S.teachers.find(t=>t.name.toLowerCase().split(" ").some(p=>p===key));
+  if(t)return t;
+  // Parcial
+  t=S.teachers.find(t=>t.name.toLowerCase().includes(key)||key.includes(t.name.toLowerCase().split(" ")[0]));
+  return t||null;
+}
+
+function matchGrupo(raw){
+  if(!raw||!raw.trim())return null;
+  const key=raw.trim().toLowerCase().replace(/\s/g,"");
+  return S.groups.find(g=>g.name.toLowerCase().replace(/\s/g,"")===key||
+    g.name.toLowerCase().replace("º","").replace("ª","").replace(/\s/g,"")===key.replace("º","").replace("ª","")
+  );
+}
+
+function importCurriculumCSV(e){
+  const file=e.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const lines=ev.target.result.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+    if(lines.length<2){toast("CSV vacío","err");return;}
+
+    const headers=lines[0].split(",").map(h=>h.trim().toLowerCase()
+      .replace(/[áàä]/g,"a").replace(/[éèë]/g,"e").replace(/[íìï]/g,"i")
+      .replace(/[óòö]/g,"o").replace(/[úùü]/g,"u"));
+
+    const iGrupo   =headers.findIndex(h=>h.includes("grupo")||h.includes("clase")||h.includes("group"));
+    const iMateria =headers.findIndex(h=>h.includes("materia")||h.includes("area")||h.includes("asignatura")||h.includes("subject"));
+    const iProfesor=headers.findIndex(h=>h.includes("profesor")||h.includes("prof")||h.includes("docente")||h.includes("teacher")||h.includes("nombre"));
+    const iSesiones=headers.findIndex(h=>h.includes("sesion")||h.includes("hora")||h.includes("session")||h.includes("horas"));
+
+    if(iGrupo<0||iMateria<0||iProfesor<0){
+      toast("No encuentro las columnas. El CSV debe tener: grupo, materia, profesor (y opcionalmente sesiones)","err");
+      return;
+    }
+
+    let ok=0, warn=[], sinProf=[], sinMateria=[], sinGrupo=[];
+
+    for(let i=1;i<lines.length;i++){
+      const cols=lines[i].split(",").map(c=>c.trim().replace(/^"|"$/g,""));
+      const rawGrupo   =cols[iGrupo]||"";
+      const rawMateria =cols[iMateria]||"";
+      const rawProfesor=cols[iProfesor]||"";
+      const rawSesiones=iSesiones>=0?cols[iSesiones]:"";
+
+      if(!rawGrupo&&!rawMateria)continue;
+
+      const grupo  =matchGrupo(rawGrupo);
+      const materia=matchMateria(rawMateria);
+      const prof   =matchProfesor(rawProfesor);
+      const sesiones=parseInt(rawSesiones)||null;
+
+      if(!grupo)  { sinGrupo.push(rawGrupo);   continue; }
+      if(!materia){ sinMateria.push(rawMateria); continue; }
+      if(!prof)   { sinProf.push(`${rawGrupo} · ${rawMateria}: "${rawProfesor}"`); }
+
+      // Crear curriculum del grupo si no existe
+      if(!S.curriculum[grupo.id]) S.curriculum[grupo.id]=[];
+      const ex=S.curriculum[grupo.id].findIndex(e=>e.sid===materia.id);
+      if(ex>=0){
+        S.curriculum[grupo.id][ex].tid=prof?.id||"";
+        if(sesiones) S.curriculum[grupo.id][ex].sessions=sesiones;
+      } else {
+        // Buscar sesiones en la plantilla oficial si no viene en el CSV
+        const grade=grupo.grade; const tpl=(S._curriculumTemplates?.[grade+"º"]||[]).find(t=>t.sid===materia.id);
+        S.curriculum[grupo.id].push({sid:materia.id, tid:prof?.id||"", sessions:sesiones||tpl?.sessions||1});
+      }
+      ok++;
+    }
+
+    save();
+
+    // Mostrar resultado detallado
+    let msg=`✅ ${ok} asignaciones importadas.`;
+    const details=[];
+    if(sinProf.length)   details.push(`⚠ ${sinProf.length} profesores no encontrados (se importaron sin asignar): ${sinProf.slice(0,3).join(", ")}${sinProf.length>3?"…":""}`);
+    if(sinMateria.length)details.push(`⚠ ${sinMateria.length} materias no reconocidas: ${[...new Set(sinMateria)].slice(0,4).join(", ")}`);
+    if(sinGrupo.length)  details.push(`⚠ ${sinGrupo.length} grupos no encontrados: ${[...new Set(sinGrupo)].slice(0,4).join(", ")}`);
+
+    if(details.length){
+      om(`<div class="mb">
+        <div class="mt">Resultado de la importación <button class="btn bgh" onclick="cm()">✕</button></div>
+        <div style="font-size:13px;color:var(--sage);font-weight:700;margin-bottom:12px">✅ ${ok} asignaciones importadas correctamente</div>
+        ${details.map(d=>`<div style="font-size:12px;color:var(--orange);margin-bottom:8px;line-height:1.6;padding:8px 10px;background:var(--amd);border-radius:var(--rs)">${d}</div>`).join("")}
+        <div style="font-size:11px;color:var(--tx3);margin-top:10px">Los no encontrados los puedes asignar manualmente en los pasos de abajo.</div>
+        <div style="display:flex;justify-content:flex-end;margin-top:14px">
+          <button class="btn bp2" onclick="cm();navigate('asistente')">Ver asistente</button>
+        </div>
+      </div>`);
+    } else {
+      toast(`✅ ${ok} asignaciones importadas sin errores`);
+      navigate("asistente");
+    }
+  };
+  reader.readAsText(file,"UTF-8");
+  e.target.value="";
+}
+
+function dlCurriculumTemplate(){
+  // Genera un CSV de ejemplo con los grupos y materias actuales
+  let rows=["grupo,materia,profesor,sesiones"];
+  S.groups.filter(g=>g.level==="primaria").forEach(g=>{
+    const tpl=S._curriculumTemplates?.[g.grade+"º"]||[];
+    tpl.filter(e=>e.sessions>0).forEach(e=>{
+      const s=S.subjects.find(s=>s.id===e.sid);
+      const t=gt((S.curriculum[g.id]||[]).find(c=>c.sid===e.sid)?.tid);
+      rows.push(`${g.name},${s?.name||e.sid},${t?.name||""},${e.sessions}`);
+    });
+  });
+  const a=document.createElement("a");
+  a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(rows.join("\n"));
+  a.download="curriculum_profesores.csv";
+  a.click();
+  toast("Plantilla CSV descargada");
+}
+
+function pgAsistente(c){
+  if(S.teachers.length===0||S.groups.length===0){
+    c.innerHTML=`<div class="card"><div class="empty">
+      <div class="ei">🧩</div><div class="et">Faltan datos previos</div>
+      <div class="es">Necesitas tener profesores y grupos creados antes de usar el asistente.</div>
+      <div style="display:flex;gap:8px;margin-top:14px;justify-content:center">
+        <button class="btn bp2" onclick="navigate('teachers')">→ Añadir profesores</button>
+        <button class="btn bo" onclick="navigate('groups')">→ Añadir grupos</button>
+      </div>
+    </div></div>`;
+    return;
+  }
+
+  // Calcular estado actual de asignaciones
+  const totalEntries = Object.values(S.curriculum).flat().length;
+  const assigned     = Object.values(S.curriculum).flat().filter(e=>e.tid).length;
+  const pct          = totalEntries>0 ? Math.round(assigned/totalEntries*100) : 0;
+
+  // Grupos de primaria con curriculum
+  const priGroups = S.groups.filter(g=>g.level==="primaria"&&S.curriculum[g.id]?.length>0);
+
+  c.innerHTML=`
+  <div style="max-width:1000px">
+
+    <!-- IMPORTAR CSV -->
+    <div class="card" style="margin-bottom:14px;border-color:rgba(91,91,123,.4);background:rgba(91,91,123,.05)">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:260px">
+          <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:3px">📊 Importar desde Excel / CSV</div>
+          <div style="font-size:12px;color:var(--tx3);line-height:1.6">
+            Exporta tu tabla de Excel como CSV con columnas: <code style="color:var(--sage);background:var(--surf2);padding:1px 5px;border-radius:3px">grupo, materia, profesor, sesiones</code><br>
+            La app reconoce los nombres en castellano, gallego o abreviados. Los profesores deben estar ya creados en la sección Profesorado.
+          </div>
+        </div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">
+          <button class="btn bo bsm" onclick="dlCurriculumTemplate()">⬇️ Descargar plantilla CSV</button>
+          <label class="btn bp2" style="cursor:pointer;font-size:13px">
+            📊 Importar CSV
+            <input type="file" accept=".csv" style="display:none" onchange="importCurriculumCSV(event)">
+          </label>
+        </div>
+      </div>
+      <details style="margin-top:10px">
+        <summary style="cursor:pointer;font-size:11px;color:var(--tx3);list-style:none">▶ Ver ejemplo de formato CSV aceptado</summary>
+        <pre style="margin-top:8px;background:var(--surf2);padding:10px;border-radius:var(--rs);font-family:'DM Mono',monospace;font-size:11px;color:var(--sage);line-height:1.8;overflow-x:auto">grupo,materia,profesor,sesiones
+1ºA,Lingua Galega,Silvia López,4
+1ºA,Lingua Castelá,Silvia López,4
+1ºA,Matemáticas,Silvia López,5
+1ºA,Inglés,Arancha,2
+1ºA,Música,Mikel,1
+1ºA,Educación Física,Richi,2
+1ºA,Relixión,BEA AL,1
+1ºB,Lingua Galega,Arancha,4
+1ºB,Matemáticas,Teresa,5
+...</pre>
+      </details>
+    </div>
+    <!-- PROGRESO GLOBAL -->
+    <div class="card" style="margin-bottom:14px;display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:22px;font-weight:800;color:var(--tx)">${assigned}<span style="font-size:14px;color:var(--tx3);font-weight:400"> / ${totalEntries}</span></div>
+        <div style="font-size:12px;color:var(--tx3)">materias asignadas</div>
+      </div>
+      <div style="flex:1;min-width:200px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:12px;color:var(--tx2)">Progreso de asignación</span>
+          <span style="font-size:12px;font-weight:700;color:${pct===100?"var(--sage)":"var(--orange)"}">${pct}%</span>
+        </div>
+        <div class="pbar"><div class="pfill" style="width:${pct}%"></div></div>
+      </div>
+      ${pct===100?`<span class="b bg" style="font-size:12px">✓ Todo asignado · listo para generar</span>`
+      :`<button class="btn bp2" onclick="navigate('generator')" ${pct<80?"disabled":""} title="${pct<80?"Asigna más profesores antes de generar":""}">⚡ Generar horario</button>`}
+    </div>
+
+    <!-- PASO 1: TUTORES -->
+    <div class="card" style="margin-bottom:14px">
+      <div style="font-size:14px;font-weight:800;color:var(--tx);margin-bottom:4px">
+        <span style="background:var(--corald);color:var(--coral2);padding:2px 9px;border-radius:20px;font-size:12px;margin-right:8px">Paso 1</span>
+        Asigna el tutor/a de cada grupo
+      </div>
+      <div style="font-size:12px;color:var(--tx3);margin-bottom:12px">El tutor/a se asignará automáticamente a todas las materias no especialistas del grupo (LCL, LGL, MAT, CN, CS, TUT…)</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">
+        ${S.groups.map(g=>{
+          const tutor=g.tutorId?gt(g.tutorId):null;
+          const tOpts=`<option value="">— Sin tutor/a —</option>`+S.teachers.map(t=>`<option value="${t.id}" ${g.tutorId===t.id?"selected":""}>${t.name}</option>`).join("");
+          const cur=S.curriculum[g.id]||[];
+          const nonSpec=cur.filter(e=>!ESPECIALISTAS_CODES.includes(S.subjects.find(s=>s.id===e.sid)?.code));
+          const allOk=nonSpec.length>0&&nonSpec.every(e=>e.tid);
+          return`<div style="padding:11px;background:var(--surf2);border-radius:var(--rs);border:1px solid ${allOk?"var(--saged)":"var(--bd2)"}">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <span style="font-size:15px;font-weight:800;color:var(--tx)">${g.name}</span>
+              ${allOk?'<span class="b bg">✓</span>':'<span class="b ba">Pendiente</span>'}
+            </div>
+            <select onchange="assignTutor('${g.id}',this.value)"
+              style="width:100%;background:var(--surf3);border:1px solid var(--bd2);border-radius:var(--rs);padding:7px 9px;font-size:12px;color:var(--tx);font-family:'DM Sans',sans-serif;outline:none">
+              ${tOpts}
+            </select>
+            ${tutor?`<div style="font-size:10px;color:var(--tx3);margin-top:5px">Asigna: ${nonSpec.length} materias no especialistas</div>`:""}
+          </div>`;
+        }).join("")}
+      </div>
+    </div>
+
+    <!-- PASO 2: ESPECIALISTAS -->
+    <div class="card" style="margin-bottom:14px">
+      <div style="font-size:14px;font-weight:800;color:var(--tx);margin-bottom:4px">
+        <span style="background:rgba(224,122,84,.2);color:var(--orange);padding:2px 9px;border-radius:20px;font-size:12px;margin-right:8px">Paso 2</span>
+        Asigna los especialistas por materia
+      </div>
+      <div style="font-size:12px;color:var(--tx3);margin-bottom:12px">Para cada materia especialista, elige qué profesor/a la imparte en cada grupo. Puedes asignar el mismo a varios grupos de una vez.</div>
+
+      ${ESPECIALISTAS_CODES.map(code=>{
+        const subj=S.subjects.find(s=>s.code===code); if(!subj)return"";
+        // Grupos que tienen esta materia en su curriculum
+        const gruposConMateria=S.groups.filter(g=>{
+          return (S.curriculum[g.id]||[]).some(e=>e.sid===subj.id);
+        });
+        if(gruposConMateria.length===0)return"";
+        const tOpts=`<option value="">— Sin asignar —</option>`+S.teachers.map(t=>`<option value="${t.id}">${t.name}</option>`).join("");
+        const allAssigned=gruposConMateria.every(g=>(S.curriculum[g.id]||[]).find(e=>e.sid===subj.id)?.tid);
+
+        return`<div style="margin-bottom:14px;padding:12px;background:var(--surf2);border-radius:var(--rs);border:1px solid ${allAssigned?"var(--saged)":"var(--bd2)"}">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+            <div style="width:10px;height:10px;border-radius:2px;background:${subj.bg};border:1px solid ${subj.bd};flex-shrink:0"></div>
+            <span style="font-size:13px;font-weight:700;color:${subj.tx}">${subj.name}</span>
+            <span style="font-size:11px;color:var(--tx3)">${gruposConMateria.length} grupos</span>
+            ${allAssigned?'<span class="b bg">✓ Completo</span>':'<span class="b ba">Pendiente</span>'}
+            <!-- Asignar mismo profesor a todos los grupos -->
+            <div style="margin-left:auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span style="font-size:11px;color:var(--tx3)">Mismo prof. a todos:</span>
+              <select onchange="assignSpecialistAll('${subj.id}',this.value);this.value=''"
+                style="background:var(--surf3);border:1px solid var(--bd2);border-radius:var(--rs);padding:5px 8px;font-size:11px;color:var(--tx);font-family:'DM Sans',sans-serif;outline:none">
+                <option value="">Seleccionar…</option>
+                ${S.teachers.map(t=>`<option value="${t.id}">${t.name}</option>`).join("")}
+              </select>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:7px">
+            ${gruposConMateria.map(g=>{
+              const entry=(S.curriculum[g.id]||[]).find(e=>e.sid===subj.id);
+              const curTch=entry?.tid?gt(entry.tid):null;
+              return`<div style="display:flex;align-items:center;gap:7px;padding:6px 9px;background:var(--surf3);border-radius:var(--rs);border:1px solid ${curTch?"var(--saged)":"var(--bd2)"}">
+                <span style="font-size:12px;font-weight:800;color:var(--tx);width:36px;flex-shrink:0">${g.name}</span>
+                <select onchange="assignSpecialist('${g.id}','${subj.id}',this.value)"
+                  style="flex:1;background:var(--surf2);border:1px solid var(--bd2);border-radius:var(--rs);padding:5px 7px;font-size:11px;color:var(--tx);font-family:'DM Sans',sans-serif;outline:none">
+                  <option value="">— Sin asignar —</option>
+                  ${S.teachers.map(t=>`<option value="${t.id}" ${entry?.tid===t.id?"selected":""}>${t.name.split(" ").slice(0,2).join(" ")}</option>`).join("")}
+                </select>
+              </div>`;
+            }).join("")}
+          </div>
+        </div>`;
+      }).join("")}
+    </div>
+
+    <!-- PASO 3: RESUMEN -->
+    <div class="card">
+      <div style="font-size:14px;font-weight:800;color:var(--tx);margin-bottom:12px">
+        <span style="background:var(--saged);color:var(--sage2);padding:2px 9px;border-radius:20px;font-size:12px;margin-right:8px">Paso 3</span>
+        Resumen de asignaciones
+      </div>
+      <div style="overflow-x:auto">
+        <table class="tbl" style="font-size:12px">
+          <thead><tr>
+            <th>Grupo</th>
+            ${S.subjects.filter(s=>s.id!=="s12"&&s.id!=="s13"&&s.id!=="s14").map(s=>`<th style="text-align:center;color:${s.tx};max-width:70px;white-space:normal;line-height:1.2">${s.code}</th>`).join("")}
+          </tr></thead>
+          <tbody>
+          ${S.groups.filter(g=>S.curriculum[g.id]?.length>0).map(g=>{
+            const cur=S.curriculum[g.id]||[];
+            return`<tr>
+              <td style="font-weight:700;color:var(--tx);white-space:nowrap">${g.name}</td>
+              ${S.subjects.filter(s=>s.id!=="s12"&&s.id!=="s13"&&s.id!=="s14").map(s=>{
+                const e=cur.find(e=>e.sid===s.id);
+                if(!e)return`<td style="text-align:center;color:var(--tx3)">—</td>`;
+                const t=gt(e.tid);
+                return`<td style="text-align:center">
+                  ${t?`<div style="font-size:10px;color:var(--sage);font-weight:700" title="${t.name}">${ini(t.name)}</div>`
+                    :`<div style="font-size:10px;color:var(--rd);font-weight:700">!</div>`}
+                </td>`;
+              }).join("")}
+            </tr>`;
+          }).join("")}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--tx3)">
+        <span style="color:var(--sage);font-weight:700">iniciales</span> = asignado · 
+        <span style="color:var(--rd);font-weight:700">!</span> = pendiente · 
+        <span style="color:var(--tx3)">—</span> = no aplica en este grupo
+      </div>
+    </div>
+  </div>`;
+}
+
+// Asigna el tutor a todas las materias NO especialistas del grupo
+function assignTutor(gid, tid){
+  const g=gg(gid); if(!g)return;
+  g.tutorId=tid;
+  if(!tid){ save(); navigate("asistente"); return; }
+  const cur=S.curriculum[gid]||[];
+  cur.forEach(e=>{
+    const s=S.subjects.find(s=>s.id===e.sid);
+    if(s&&!ESPECIALISTAS_CODES.includes(s.code)) e.tid=tid;
+  });
+  save(); navigate("asistente");
+  toast(`Tutor/a asignado a ${g.name} · ${cur.filter(e=>!ESPECIALISTAS_CODES.includes(S.subjects.find(s=>s.id===e.sid)?.code)).length} materias actualizadas`);
+}
+
+// Asigna un especialista a una materia en UN grupo concreto
+function assignSpecialist(gid, sid, tid){
+  const cur=S.curriculum[gid]; if(!cur)return;
+  const e=cur.find(e=>e.sid===sid);
+  if(e){ e.tid=tid; save(); navigate("asistente"); }
+}
+
+// Asigna un especialista a una materia en TODOS los grupos a la vez
+function assignSpecialistAll(sid, tid){
+  if(!tid)return;
+  let n=0;
+  S.groups.forEach(g=>{
+    const cur=S.curriculum[g.id]; if(!cur)return;
+    const e=cur.find(e=>e.sid===sid);
+    if(e){ e.tid=tid; n++; }
+  });
+  save(); navigate("asistente");
+  const s=S.subjects.find(s=>s.id===sid);
+  const t=gt(tid);
+  toast(`${t?.name.split(" ")[0]} asignado/a a ${s?.name} en ${n} grupos`);
+}
+function pgConstraints(c){
+  c.innerHTML=`<div class="sh2"><div><h1>Restricciones</h1><p>Reglas del motor CSP</p></div><button class="btn bp2" onclick="openCrm()">+ Nueva restricción</button></div>
+  <div class="g4" style="margin-bottom:14px">
+    ${[["Duras",S.constraints.filter(c=>c.isHard).length,"var(--rd)","var(--rdd)"],["Blandas",S.constraints.filter(c=>!c.isHard).length,"var(--am)","var(--amd)"],["Grupos",S.constraints.filter(c=>c.type==="group").length,"var(--gr)","var(--grd)"],["Profesores",S.constraints.filter(c=>c.type==="teacher").length,"var(--bl)","var(--bld)"]].map(([l,v,col,bg])=>`
+    <div style="background:${bg};border-radius:var(--r);padding:11px 13px;display:flex;justify-content:space-between">
+      <span style="font-size:13px;font-weight:700;color:${col}">${l}</span>
+      <span style="font-size:22px;font-weight:800;color:${col}">${v}</span>
+    </div>`).join("")}
+  </div>
+  ${S.constraints.length===0?`<div class="card"><div class="empty">
+    <div class="ei">🔒</div><div class="et">Sin restricciones</div>
+    <div class="es">Las restricciones permiten al motor CSP adaptar el horario<br>a las necesidades reales de tu centro.<br><br>
+    <strong style="color:var(--tx)">Ejemplos habituales:</strong><br>
+    • EF no después del comedor<br>• Matemáticas en primeras horas<br>• [Nombre] no disponible lunes 1ª hora<br>• Orientadora solo miércoles y viernes</div>
+    <button class="btn bp2" style="margin-top:14px" onclick="openCrm()">+ Añadir primera restricción</button>
+  </div></div>`:`
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="tbl"><thead><tr><th>Tipo</th><th>Afecta a</th><th>Materia</th><th>Descripción</th><th>Prioridad</th><th>Naturaleza</th><th></th></tr></thead><tbody>
+    ${S.constraints.map(cr=>`<tr>
+      <td><span class="b ${cr.type==="teacher"?"bb":"bg"}">${cr.type==="teacher"?"Profesor":"Grupo"}</span></td>
+      <td style="font-weight:600;color:var(--tx)">${cr.target}</td>
+      <td style="color:var(--tx2)">${cr.subject||"—"}</td>
+      <td style="font-size:12px;max-width:210px;color:var(--tx2)">${cr.desc}</td>
+      <td><div class="pdots">${[...Array(10)].map((_,i)=>`<div class="pd" style="background:${i<cr.priority?"var(--bl)":"var(--bd2)"}"></div>`).join("")}<span style="font-size:10px;color:var(--tx3);margin-left:3px">${cr.priority}</span></div></td>
+      <td><span class="b ${cr.isHard?"br":"ba"}">${cr.isHard?"⬛ Dura":"⬜ Blanda"}</span></td>
+      <td><button class="btn bgh bsm" onclick="delCr(${cr.id})">🗑️</button></td>
+    </tr>`).join("")}
+    </tbody></table>
+  </div>`}`;
+}
+function openCrm(){
+  const sOpts=`<option value="">Todas / No aplica</option>`+S.subjects.map(s=>`<option value="${s.code}">${s.name}</option>`).join("");
+  const tNames=S.teachers.map(t=>t.name);
+  const gNames=[...S.groups.map(g=>g.name),"Todos"];
+  const topts=`<optgroup label="Grupos">${gNames.map(n=>`<option value="${n}">${n}</option>`).join("")}</optgroup><optgroup label="Profesores">${tNames.map(n=>`<option value="${n}">${n}</option>`).join("")}</optgroup>`;
+  om(`<div class="mb"><div class="mt">Nueva restricción <button class="btn bgh" onclick="cm()">✕</button></div>
+  <div style="display:flex;flex-direction:column;gap:11px">
+    <div class="g2">
+      <div class="f"><label>Tipo</label><select id="cft"><option value="group">De grupo</option><option value="teacher">De profesor</option></select></div>
+      <div class="f"><label>Afecta a</label><select id="cfta">${topts}</select></div>
+    </div>
+    <div class="f"><label>Materia (opcional)</label><select id="cfs">${sOpts}</select></div>
+    <div class="f"><label>Regla</label><select id="cfr">
+      <option value="no_after_lunch">No después del comedor (ej: EF)</option>
+      <option value="preferred_morning">Preferentemente por la mañana (ej: MAT, LEN)</option>
+      <option value="no_consecutive">No repetir la misma materia consecutiva</option>
+      <option value="no_last_slot">No en última hora del día</option>
+      <option value="no_first_slot">No en primera hora del día</option>
+      <option value="unavailable">No disponible en franja concreta</option>
+      <option value="directive">Liberación por cargo directivo</option>
+      <option value="half_day">Media jornada (solo mañanas)</option>
+      <option value="itinerant">Itinerante (días concretos del centro)</option>
+      <option value="compact">Compactar horario (sin huecos entre clases)</option>
+      <option value="max_per_day">Máximo de sesiones por día</option>
+      <option value="min_days">Mínimo días entre sesiones de la misma materia</option>
+    </select></div>
+    <div class="f"><label>Descripción detallada *</label><input id="cfd" placeholder="Ej: EF no puede impartirse después del comedor por higiene"/></div>
+    <div><label style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px">Prioridad: <span id="cpv">5</span>/10</label>
+    <input type="range" min="1" max="10" value="5" id="cfp" oninput="$('cpv').textContent=this.value"></div>
+    <label class="cbr"><input type="checkbox" id="cfh"> <strong>Restricción dura</strong> — violarla invalida el horario completo</label>
+    <div style="display:flex;justify-content:flex-end;gap:7px;margin-top:4px">
+      <button class="btn bo" onclick="cm()">Cancelar</button>
+      <button class="btn bp2" onclick="saveCr()">Añadir restricción</button>
+    </div>
+  </div></div>`);
+}
+function saveCr(){
+  const target=$("cfta").value,desc=$("cfd").value.trim();
+  if(!target||!desc){toast("Rellena todos los campos","err");return;}
+  const nid=(S.constraints.length>0?Math.max(...S.constraints.map(c=>c.id)):0)+1;
+  S.constraints.push({id:nid,type:$("cft").value,target,subject:$("cfs").value||null,rule:$("cfr").value,desc,priority:+$("cfp").value,isHard:$("cfh").checked});
+  cm();navigate("constraints");toast("Restricción añadida");
+}
+function delCr(id){S.constraints=S.constraints.filter(c=>c.id!==id);navigate("constraints");toast("Restricción eliminada","warn");}
+
+// ════════════════════════════════════════════════════
+// 7 · GENERADOR
+// ════════════════════════════════════════════════════
+function pgGenerator(c){
+  const ok=S.teachers.length>0&&S.groups.length>0&&Object.keys(S.curriculum).length>0;
+  const totalSess=Object.values(S.curriculum).flat().reduce((a,e)=>a+e.sessions,0);
+  c.innerHTML=`<div class="sh2"><div><h1>Generador CSP</h1><p>Motor de backtracking · MRV · Forward Checking</p></div></div>
+  ${!ok?`<div class="card" style="border-color:var(--amd)"><div class="empty">
+    <div class="ei">⚠️</div><div class="et">Faltan datos para generar</div>
+    <div class="es">${S.teachers.length===0?'❌':'✅'} Profesores (${S.teachers.length})<br>${S.groups.length===0?'❌':'✅'} Grupos (${S.groups.length})<br>${Object.keys(S.curriculum).length===0?'❌':'✅'} Curriculum configurado</div>
+  </div></div>`:`
+  <div style="display:grid;grid-template-columns:300px 1fr;gap:14px">
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div class="card">
+        <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:11px">Pesos de restricciones blandas</div>
+        ${[["w1","Instrumentales en primeras horas",3],["w2","Evitar huecos del profesor",4],["w3","Distribuir sesiones por semana",3],["w4","Evitar última hora",2],["w5","No misma materia consecutiva",3]].map(([id,l,v])=>`
+        <div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+            <span style="font-size:12px;color:var(--tx2)">${l}</span>
+            <span style="font-size:12px;font-weight:700;color:var(--bl2)" id="${id}v">${v}</span>
+          </div>
+          <input type="range" min="1" max="10" value="${v}" id="${id}" oninput="$('${id}v').textContent=this.value">
+        </div>`).join("")}
+      </div>
+      <div class="card">
+        <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:8px">Datos cargados</div>
+        ${[["Profesores",S.teachers.length],["Grupos",S.groups.length],["Materias",S.subjects.length],["Restricciones",S.constraints.length],["Sesiones totales",totalSess]].map(([l,v])=>`
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--bd);font-size:12px">
+          <span style="color:var(--tx2)">${l}</span><span class="b bb">${v}</span>
+        </div>`).join("")}
+      </div>
+      <button class="btn bg2" id="gbtn" style="width:100%;padding:11px;justify-content:center;font-size:14px" onclick="runGen()">⚡ Generar horario</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="background:#050d18;border:1px solid var(--bd);border-radius:var(--r)">
+        <div style="padding:10px 13px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between">
+          <span style="font-size:13px;font-weight:700;color:var(--tx)">Log del motor CSP</span>
+          <span id="gst" style="font-size:11px;font-weight:700;color:var(--tx3)">En espera</span>
+        </div>
+        <div id="gpbw" style="overflow:hidden;max-height:0;transition:max-height .3s">
+          <div style="padding:0 13px"><div class="pbar"><div class="pfill" id="gpb" style="width:0%"></div></div></div>
+        </div>
+        <div class="glog" id="glog"><div style="color:var(--tx3);text-align:center;margin-top:44px;font-size:13px"><div style="font-size:24px;margin-bottom:7px">⚡</div>Pulsa "Generar horario" para iniciar</div></div>
+      </div>
+      <div class="card"><div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:9px">Modelo matemático del CSP</div>
+        <div class="g3" style="gap:8px">
+          ${[["Variable de decisión","X[g][s][d][t] ∈ {0,1}\ng=grupo, s=materia\nd=día (1..5)\nt=franja (1..N)\nX=1 ↔ grupo g tiene la\nmateria s el día d, franja t"],["Restricciones duras","C1: ≤1 materia/grupo/franja\nC2: cumplir curriculum\nC3: sin duplicar profesor\nC4: respetar disponibilidad\nC5: no asignar en recreos"],["Función objetivo","MAXIMIZAR Σi wi·sat_i(X)\nw1: instrumentales mañana\nw2: sin huecos del profesor\nw3: distribuir sesiones\nw4: evitar última hora\nw5: no consecutivas iguales"]].map(([t2,con])=>`
+          <div style="background:var(--surf2);border-radius:var(--rs);padding:9px">
+            <div style="font-size:11px;font-weight:700;color:var(--tx2);margin-bottom:5px">${t2}</div>
+            <pre style="font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3);white-space:pre-wrap;margin:0;line-height:1.7">${con}</pre>
+          </div>`).join("")}
+        </div>
+      </div>
+    </div>
+  </div>`}`;
+}
+
+function runGen(){
+  const btn=$("gbtn");if(!btn)return;
+  btn.disabled=true;btn.textContent="⏳ Generando...";
+  $("gst").textContent="Calculando...";$("gst").style.color="var(--orange)";
+  $("gpbw").style.maxHeight="34px";$("glog").innerHTML="";
+
+  // Pequeño timeout para que el navegador pinte el estado "Calculando" antes de bloquear
+  setTimeout(()=>{
+
+  // ════════════════════════════════════════════════════
+  // MOTOR CSP REAL — 3 restricciones duras fundamentales:
+  // C1: Un profesor no puede estar en dos grupos a la vez
+  // C2: Un grupo solo puede tener una materia por franja
+  // C3: Todas las sesiones del curriculum deben quedar asignadas
+  // ════════════════════════════════════════════════════
+  const t0 = Date.now();
+  const lectSlots = S.slots.filter(s=>s.type==="class").map(s=>s.n);
+  const DAYS_N = [1,2,3,4,5];
+
+  // Estructura del horario: schedule[groupName][day][slot] = {s, t}
+  const sched = {};
+  S.groups.forEach(g=>{ sched[g.name]={}; DAYS_N.forEach(d=>{ sched[g.name][d]={}; }); });
+
+  // Índice de ocupación del profesor: teacherBusy[tid][day][slot] = true
+  const teacherBusy = {};
+  S.teachers.forEach(t=>{ teacherBusy[t.id]={}; DAYS_N.forEach(d=>{ teacherBusy[t.id][d]={}; }); });
+
+  // Respetar no-disponibilidades del profesorado
+  S.teachers.forEach(t=>{
+    (t.unavail||[]).forEach(u=>{ teacherBusy[t.id][u.d][u.s]=true; });
+  });
+
+  // Construir lista de tareas a colocar: {group, subject, teacherId, sessions}
+  const tasks = [];
+  S.groups.forEach(g=>{
+    (S.curriculum[g.id]||[]).forEach(e=>{
+      if(e.sessions>0){
+        tasks.push({ gname:g.name, sid:e.sid, tid:e.tid, sessions:e.sessions,
+          code: S.subjects.find(s=>s.id===e.sid)?.code||"???" });
+      }
+    });
+  });
+
+  // Ordenar por sesiones DESC (más sesiones primero → más difícil de colocar → MRV)
+  tasks.sort((a,b)=>b.sessions-a.sessions);
+
+  const conflicts = [];
+  let placed = 0, skipped = 0;
+
+  // Función: devuelve todas las franjas libres para un grupo+profesor en el día
+  function getFreeSlots(gname, tid, day){
+    return lectSlots.filter(slot=>{
+      const groupFree = !sched[gname][day][slot];
+      const teacherFree = !tid || !teacherBusy[tid][day][slot];
+      return groupFree && teacherFree;
+    });
+  }
+
+  // Función: intenta colocar N sesiones de una tarea sin conflictos
+  function placeTask(task){
+    let remaining = task.sessions;
+    const placements = []; // [{day,slot}] para deshacer si falla
+
+    // Distribuir sesiones por días distintos si es posible (prefer spread)
+    // Intentamos como máximo 2 sesiones por día de la misma materia
+    const daySessionCount = {}; DAYS_N.forEach(d=>daySessionCount[d]=0);
+
+    // Shuffle días para evitar siempre el mismo orden
+    const shuffledDays = [...DAYS_N].sort(()=>Math.random()-.5);
+
+    for(let pass=0;pass<2&&remaining>0;pass++){
+      // pass=0: máx 1 sesión/día; pass=1: máx 2 sesiones/día (si no hubo suficiente)
+      const maxPerDay = pass===0?1:2;
+      for(const day of shuffledDays){
+        if(remaining<=0) break;
+        if(daySessionCount[day]>=maxPerDay) continue;
+        const free = getFreeSlots(task.gname, task.tid, day);
+        if(free.length===0) continue;
+
+        // Preferir franjas de mañana para instrumentales
+        const subj = S.subjects.find(s=>s.id===task.sid);
+        const morningSlots = free.filter(s=>lectSlots.indexOf(s)<3);
+        const pool = (subj?.instr && morningSlots.length>0) ? morningSlots : free;
+        const slot = pool[Math.floor(Math.random()*pool.length)];
+
+        sched[task.gname][day][slot] = { s:task.code, t:task.tid };
+        if(task.tid) teacherBusy[task.tid][day][slot] = true;
+        placements.push({day,slot});
+        daySessionCount[day]++;
+        remaining--;
+      }
+    }
+
+    if(remaining>0){
+      // No se pudieron colocar todas → deshacer y reportar conflicto
+      placements.forEach(({day,slot})=>{
+        delete sched[task.gname][day][slot];
+        if(task.tid) delete teacherBusy[task.tid][day][slot];
+      });
+      return false;
+    }
+    return true;
+  }
+
+  // Ejecutar colocación
+  for(const task of tasks){
+    const ok = placeTask(task);
+    if(ok) placed += task.sessions;
+    else {
+      skipped += task.sessions;
+      const tname = task.tid ? gt(task.tid)?.name : "Sin profesor";
+      conflicts.push(`${task.gname} · ${task.code} · ${tname}: no hay hueco disponible (${task.sessions} ses.)`);
+    }
+  }
+
+  // Validación post-generación: comprobar C1 (ningún profesor en 2 grupos a la vez)
+  const hardViolations = [];
+  DAYS_N.forEach(day=>{
+    lectSlots.forEach(slot=>{
+      const profesoresEnFranja = {};
+      S.groups.forEach(g=>{
+        const cell = sched[g.name][day]?.[slot];
+        if(cell?.t){
+          if(profesoresEnFranja[cell.t]){
+            hardViolations.push(`⬛ CONFLICTO DURO: ${gt(cell.t)?.name} en ${g.name} Y ${profesoresEnFranja[cell.t]} a la vez (${DAYS[day-1]} franja ${slot})`);
+          } else {
+            profesoresEnFranja[cell.t] = g.name;
+          }
+        }
+      });
+    });
+  });
+
+  S.schedule = {};
+  S.groups.forEach(g=>{ S.schedule[g.name]=sched[g.name]; });
+
+  const elapsed = Date.now()-t0;
+  const score = Math.max(30, Math.round(100 - skipped*8 - hardViolations.length*15));
+
+  // Construir log final
+  const logLines = [
+    [`🚀 Motor CSP iniciado — CEIP de Monforte`,"#80bde2"],
+    [`📊 ${S.teachers.length} profesores · ${S.groups.length} grupos · ${tasks.length} tareas`,"#80bde2"],
+    [`📐 ${lectSlots.length} franjas lectivas/día × 5 días = ${lectSlots.length*5} franjas/semana por grupo`,"#80bde2"],
+    [`⚙️  Estrategia: MRV + distribución semanal + preferencia mañana para instrumentales`,"#80bde2"],
+    [`🔄 Procesando ${tasks.length} asignaciones...`,"#bfddf0"],
+    ...tasks.slice(0,6).map(t=>[`   → ${t.gname} · ${t.code} · ${t.sessions} ses. · ${t.tid?gt(t.tid)?.name?.split(" ")[0]:"⚠ sin prof"}`,"#80bde2"]),
+    tasks.length>6?[`   ... y ${tasks.length-6} más`,"#6a8fa8"]:null,
+    [`✅ ${placed} sesiones colocadas correctamente`,"#4ade80"],
+    skipped>0?[`⚠️  ${skipped} sesiones no colocadas (conflicto de horario)`,"#fbbf24"]:null,
+    ...hardViolations.slice(0,5).map(v=>[v,"#f87171"]),
+    hardViolations.length>5?[`... y ${hardViolations.length-5} conflictos más`,"#f87171"]:null,
+    conflicts.length>0?[`📋 Causas de sesiones no colocadas:`,"#fbbf24"]:null,
+    ...conflicts.slice(0,4).map(c=>[`   · ${c}`,"#fbbf24"]),
+    [`📈 Puntuación: ${score}/100`,"#4ade80"],
+    [`🔴 Conflictos duros: ${hardViolations.length}`  , hardViolations.length===0?"#4ade80":"#f87171"],
+    [`⏱️  Tiempo: ${elapsed}ms`,"#80bde2"],
+    [`💾 Horario guardado`,"#4ade80"],
+  ].filter(Boolean);
+
+  let i=0;
+  const tick=setInterval(()=>{
+    if(i>=logLines.length){clearInterval(tick);finishGen(score,hardViolations.length,skipped);return;}
+    const[text,color]=logLines[i];
+    const ln=document.createElement("div");ln.style.color=color;ln.textContent=text;
+    $("glog").appendChild(ln);$("glog").scrollTop=$("glog").scrollHeight;
+    $("gpb").style.width=Math.round(((i+1)/logLines.length)*100)+"%";
+    $("gst").textContent=Math.round(((i+1)/logLines.length)*100)+"%";
+    i++;
+  },120);
+
+  },50); // fin setTimeout
+}
+function finishGen(score, hardV, skipped){
+  const btn=$("gbtn");if(!btn)return;
+  btn.disabled=false;btn.textContent="⚡ Regenerar horario";
+  $("gst").textContent= hardV===0&&skipped===0 ? "✓ SIN CONFLICTOS" : hardV>0 ? `⚠ ${hardV} CONFLICTOS` : "✓ COMPLETADO";
+  $("gst").style.color = hardV===0&&skipped===0 ? "#4ade80" : hardV>0 ? "#f87171" : "#fbbf24";
+  S.activeVersion={name:`Versión ${S.versions.length+1}`,score,hardViolations:hardV,softViolations:skipped};
+  S.versions.unshift({...S.activeVersion,date:"Ahora"});
+  const el=$("tb-score");
+  if(el){
+    el.textContent=`${S.activeVersion.name} · ${score}/100 · ${hardV} conflictos`;
+    el.className=hardV===0?"b bg":"b br";
+  }
+  save();
+  if(hardV===0&&skipped===0) toast("✅ Horario generado sin conflictos");
+  else if(hardV>0) toast(`⚠️ Horario con ${hardV} conflictos duros — revisa el log`,"warn");
+  else toast(`Horario generado · ${skipped} sesiones sin colocar`,"warn");
+}
+
+// ════════════════════════════════════════════════════
+// 8 · HORARIOS
+// ════════════════════════════════════════════════════
+function pgSchedule(c){
+  if(Object.keys(S.schedule).length===0){
+    c.innerHTML=`<div class="card"><div class="empty"><div class="ei">📅</div><div class="et">Sin horario generado</div><div class="es">Ve al Generador CSP para crear el horario.</div><button class="btn bp2" style="margin-top:11px" onclick="navigate('generator')">Ir al Generador →</button></div></div>`;return;
+  }
+  const gks=Object.keys(S.schedule);
+  if(!svGrp||!S.schedule[svGrp])svGrp=gks[0];
+  if(!svTch)svTch=S.teachers[0]?.id;
+  c.innerHTML=`<div class="sh2"><div><h1>Horarios</h1><p>Drag & Drop para reordenar</p></div>
+  <div style="display:flex;gap:7px">
+    <div class="tabs"><button class="tbtn ${svMode==="group"?"on":""}" onclick="svMode='group';pgSchedule($('ct'))">Por grupo</button><button class="tbtn ${svMode==="teacher"?"on":""}" onclick="svMode='teacher';pgSchedule($('ct'))">Por profesor</button></div>
+    <button class="btn bp2 bsm" onclick="${svMode==="group"?"printGroupSchedule()":"printTeacherSchedule()"}">🖨️ Imprimir</button>
+    <button class="btn bo bsm" onclick="navigate('generator')">⚡ Regenerar</button>
+  </div></div>
+  <div style="display:flex;gap:5px;margin-bottom:11px;flex-wrap:wrap">
+    ${svMode==="group"?gks.map(gn=>`<span class="chip ${gn===svGrp?"on":""}" onclick="svGrp='${gn}';pgSchedule($('ct'))">${gn}</span>`).join("")
+    :S.teachers.map(t=>`<span class="chip ${t.id===svTch?"on":""}" style="${t.id===svTch?"background:"+t.color+";border-color:"+t.color:""}" onclick="svTch='${t.id}';pgSchedule($('ct'))">${t.name.split(" ")[0]}</span>`).join("")}
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 196px;gap:11px">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px">
+        <div><div style="font-size:15px;font-weight:800;color:var(--tx)">${svMode==="group"?`Grupo ${svGrp}`:gt(svTch)?.name||""}</div><div style="font-size:11px;color:var(--tx3)">Arrastra para reordenar</div></div>
+        ${S.activeVersion?`<span class="b bg">${S.activeVersion.score}/100 · ${S.activeVersion.hardViolations} errores</span>`:""}
+      </div>
+      <div id="sgw" style="overflow-x:auto"></div>
+      <div id="sgl" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:11px;padding-top:9px;border-top:1px solid var(--bd)"></div>
+    </div>
+    <div id="sgs" class="card"></div>
+  </div>`;
+  drawSG();
+}
+
+function drawSG(){
+  const w=$("sgw");if(!w)return;
+  const sched=svMode==="group"?(S.schedule[svGrp]||{}):{};
+  let h=`<div class="sg" style="grid-template-columns:90px repeat(5,1fr)"><div></div>${DAYS.map(d=>`<div class="sh3">${d}</div>`).join("")}`;
+
+  S.slots.forEach(sl=>{
+    const isClass = sl.type==="class";
+    const isRecess = sl.type==="recess";
+    const isReading = sl.type==="reading";
+    const isLunch = sl.type==="lunch";
+    const isLibrary = sl.type==="library";
+
+    // Columna de hora
+    if(isClass){
+      h+=`<div class="stc"><span style="font-size:11px;font-weight:800;color:var(--tx2)">${sl.n}ª</span><span style="font-size:8px;margin-top:1px;color:var(--tx3)">${sl.time}</span><span style="font-size:8px;color:var(--coral);font-weight:700">${sl.label}</span></div>`;
+    } else if(isRecess){
+      h+=`<div class="stc"><span style="font-size:9px;font-weight:800;color:var(--orange)">RECREO</span><span style="font-size:8px;color:var(--tx3)">${sl.time}</span></div>`;
+    } else if(isReading){
+      h+=`<div class="stc"><span style="font-size:9px;font-weight:800;color:var(--orange)">LEER</span><span style="font-size:8px;color:var(--tx3)">${sl.time}</span></div>`;
+    } else if(isLunch){
+      h+=`<div class="stc"><span style="font-size:9px;font-weight:800;color:var(--tx3)">COMEDOR</span><span style="font-size:8px;color:var(--tx3)">${sl.time}</span></div>`;
+    } else if(isLibrary){
+      h+=`<div class="stc"><span style="font-size:9px;font-weight:800;color:var(--slate2)">BIBLIO.</span><span style="font-size:8px;color:var(--tx3)">${sl.time}</span></div>`;
+    }
+
+    for(let d=1;d<=5;d++){
+      if(isClass){
+        const ses=svMode==="group"?sched[d]?.[sl.n]:getTchSes(svTch,d,sl.n);
+        const sub=ses?S.subjects.find(s=>s.code===ses.s):null;
+        const tch=ses?gt(ses.t):null;
+        const cid=`c${d}-${sl.n}`;
+        if(ses&&sub){
+          h+=`<div class="sc" id="${cid}" style="background:${sub.bg};border-color:${sub.bd}" draggable="true" data-d="${d}" data-s="${sl.n}">
+            <div class="sn" style="font-size:11px;font-weight:800;color:${sub.tx};line-height:1.2">${sub.name}</div>
+            ${svMode==="group"&&tch?`<div style="font-size:9px;color:${sub.tx};opacity:.7;margin-top:2px;display:flex;align-items:center;gap:3px"><div style="width:6px;height:6px;border-radius:50%;background:${tch.color};flex-shrink:0"></div>${tch.name.split(" ")[0]}</div>`:""}
+            ${svMode==="teacher"&&ses.group?`<div style="font-size:9px;color:${sub.tx};opacity:.7;margin-top:2px">${ses.group}</div>`:""}
+          </div>`;
+        } else {
+          h+=`<div class="sc emp" id="${cid}" data-d="${d}" data-s="${sl.n}"></div>`;
+        }
+      } else if(isRecess){
+        h+=`<div class="rc" style="background:rgba(224,122,84,.08);border-color:rgba(224,122,84,.25);min-height:32px"><span style="font-size:9px;font-weight:800;color:var(--orange)">RECREO · ${sl.time}</span></div>`;
+      } else if(isReading){
+        h+=`<div class="rc" style="background:rgba(224,122,84,.05);border-color:rgba(224,122,84,.2);min-height:32px"><span style="font-size:9px;font-weight:800;color:var(--orange)">HORA DE LEER · ${sl.time}</span></div>`;
+      } else if(isLunch){
+        h+=`<div class="rc" style="background:rgba(100,90,80,.06);border-color:rgba(100,90,80,.15);min-height:32px"><span style="font-size:9px;font-weight:800;color:var(--tx3)">COMEDOR · ${sl.time}</span></div>`;
+      } else if(isLibrary){
+        h+=`<div class="rc" style="background:rgba(91,91,123,.08);border-color:rgba(91,91,123,.25);min-height:32px"><span style="font-size:9px;font-weight:800;color:var(--slate2)">GUARDIA BIBLIOTECA · ${sl.time}</span></div>`;
+      }
+    }
+  });
+
+  h+=`</div>`;w.innerHTML=h;
+
+  w.querySelectorAll(".sc:not(.emp)").forEach(cell=>{
+    cell.addEventListener("dragstart",e=>{dragSrc=cell;cell.classList.add("dr");e.dataTransfer.effectAllowed="move";});
+    cell.addEventListener("dragend",()=>cell.classList.remove("dr"));
+    cell.addEventListener("dragover",e=>{e.preventDefault();cell.classList.add("ov2");});
+    cell.addEventListener("dragleave",()=>cell.classList.remove("ov2"));
+    cell.addEventListener("drop",e=>{e.preventDefault();cell.classList.remove("ov2");if(dragSrc&&dragSrc!==cell&&svMode==="group")doSwap(dragSrc,cell);});
+  });
+  w.querySelectorAll(".sc.emp").forEach(cell=>{
+    cell.addEventListener("dragover",e=>{e.preventDefault();cell.classList.add("ov2");});
+    cell.addEventListener("dragleave",()=>cell.classList.remove("ov2"));
+    cell.addEventListener("drop",e=>{e.preventDefault();cell.classList.remove("ov2");if(dragSrc&&svMode==="group")doSwap(dragSrc,cell);});
+  });
+
+  // Leyenda
+  const leg=$("sgl");if(leg){
+    const u=new Set();
+    if(svMode==="group") Object.values(sched).forEach(day=>Object.values(day||{}).forEach(s=>s&&u.add(s.s)));
+    leg.innerHTML=[...u].map(code=>{const s=S.subjects.find(s=>s.code===code);return s?`<div style="display:flex;align-items:center;gap:3px;font-size:10px"><div style="width:9px;height:9px;border-radius:2px;background:${s.bg};border:1px solid ${s.bd}"></div><span style="color:var(--tx2)">${s.name}</span></div>`:""}).join("");
+  }
+
+  // Resumen
+  const sid=$("sgs");if(sid){
+    const es=svMode==="group"?Object.values(sched).flatMap(d=>Object.values(d||{})).filter(Boolean):[];
+    const cn={};es.forEach(s=>{if(s)cn[s.s]=(cn[s.s]||0)+1;});
+    const classSlotsPerDay=S.slots.filter(s=>s.type==="class").length;
+    sid.innerHTML=`<div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:9px">Sesiones del grupo</div>
+    <div style="font-size:11px;color:var(--tx3);margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--bd)">
+      ${classSlotsPerDay} franjas lectivas/día · ${classSlotsPerDay*5} sem.
+    </div>`
+      +(Object.keys(cn).length?Object.entries(cn).map(([code,n])=>{const s=S.subjects.find(s2=>s2.code===code);return`<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0"><div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--tx2)"><div style="width:7px;height:7px;border-radius:2px;background:${s?.bg||"#333"}"></div>${s?.name||code}</div><span class="b bb">${n}h</span></div>`;}).join("")
+      :`<div style="font-size:12px;color:var(--tx3)">Sin sesiones</div>`);
+  }
+}
+function getTchSes(tid,day,slot){for(const[gn,gs2] of Object.entries(S.schedule)){const s=gs2[day]?.[slot];if(s&&s.t===tid)return{...s,group:gn};}return null;}
+function doSwap(src,dst){
+  const sch=S.schedule[svGrp];if(!sch)return;
+  const sd=+src.dataset.d,ss=+src.dataset.s,dd=+dst.dataset.d,ds=+dst.dataset.s;
+  if(!sch[sd])sch[sd]={};if(!sch[dd])sch[dd]={};
+  const tmp=sch[sd][ss];sch[sd][ss]=sch[dd][ds]||null;sch[dd][ds]=tmp;
+  if(!sch[sd][ss])delete sch[sd][ss];if(!sch[dd][ds])delete sch[dd][ds];
+  drawSG();toast("Sesión movida");
+}
+
+// ════════════════════════════════════════════════════
+// 9 · EXPORTAR
+// ════════════════════════════════════════════════════
+function pgExport(c){
+  const has=Object.keys(S.schedule).length>0;
+  c.innerHTML=`<div class="sh2"><div><h1>Exportar</h1><p>Descarga y comparte el horario</p></div></div>
+  ${!has?`<div class="card"><div class="empty"><div class="ei">📤</div><div class="et">Sin horario generado</div><div class="es">Genera primero el horario.</div><button class="btn bp2" style="margin-top:11px" onclick="navigate('generator')">Ir al Generador →</button></div></div>`:`
+  <div class="g3" style="margin-bottom:16px">
+    ${[["💾","Guardar todos los datos","Descarga un .json con todos los datos del centro y el horario generado. Cárgalo después para continuar.","var(--bl)","var(--bld)",()=>exportData()],["🖨️","Imprimir horario de grupo","Abre una ventana de impresión con el horario del grupo seleccionado, lista para imprimir en A4.","var(--gr)","var(--grd)",()=>printG()],["📋","Copiar como texto","Copia el horario del grupo activo al portapapeles, útil para pegarlo en un correo o documento.","var(--pu)","#2e1065",()=>copyT()]].map(([ico,t,d,col,bg,fn])=>`
+    <div class="card" style="transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+      <div style="width:40px;height:40px;border-radius:10px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:9px">${ico}</div>
+      <div style="font-weight:700;color:var(--tx);font-size:13px;margin-bottom:4px">${t}</div>
+      <div style="font-size:12px;color:var(--tx3);margin-bottom:11px;line-height:1.5">${d}</div>
+      <button class="btn bp2 bsm" style="width:100%;justify-content:center" onclick="(${fn})()">Generar</button>
+    </div>`).join("")}
+  </div>
+  <div class="card">
+    <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:9px">Grupo activo para impresión</div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap">
+      ${Object.keys(S.schedule).map(gn=>`<span class="chip ${gn===svGrp?"on":""}" onclick="svGrp='${gn}';pgExport($('ct'))">${gn}</span>`).join("")}
+    </div>
+  </div>`}`;
+}
+function printG(){
+  if(!svGrp||!S.schedule[svGrp]){toast("Selecciona un grupo","warn");return;}
+  const sch=S.schedule[svGrp]||{};let rows="";
+  S.slots.forEach(sl=>{
+    if(sl.recess)rows+=`<tr><td style="background:#fef3c7;color:#92400e;font-weight:700;text-align:center">${sl.time}</td>${DAYS.map(()=>`<td style="background:#fef3c7;text-align:center;color:#92400e;font-size:11px">RECREO</td>`).join("")}</tr>`;
+    else{rows+=`<tr><td style="font-weight:700;text-align:center;color:#475569;white-space:nowrap">${sl.n}ª<br><small style="font-weight:400;font-size:10px">${sl.time}</small></td>`;for(let d=1;d<=5;d++){const ses=sch[d]?.[sl.n];const sub=ses?S.subjects.find(s=>s.code===ses.s):null;const tch=ses?gt(ses.t):null;rows+=`<td style="text-align:center;${sub?`background:${sub.bg.replace(/#(?:[0-9a-f]{3}){1,2}/i,c=>c)};color:${sub.tx};`:""}">${sub?`<strong style="font-size:12px">${sub.name}</strong>${tch?`<br><small style="font-size:10px;font-weight:400">${tch.name}</small>`:""}`:"<span style='color:#cbd5e1'>—</span>"}</td>`;}rows+=`</tr>`;}
+  });
+  const win=window.open("","_blank");
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Horario ${svGrp}</title>
+  <style>body{font-family:Arial,sans-serif;padding:20px}h1{font-size:18px;margin-bottom:3px}h2{font-size:13px;color:#64748b;font-weight:400;margin-bottom:14px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #e2e8f0;padding:7px 6px;font-size:13px}th{background:#0f172a;color:#fff;font-size:11px;text-transform:uppercase}@media print{.noprint{display:none}}</style>
+  </head><body><h1>${S.center.name} — Horario ${svGrp}</h1><h2>Curso ${S.center.year}${S.activeVersion?" · "+S.activeVersion.name:""}</h2>
+  <table><thead><tr><th>Hora</th>${DAYS.map(d=>`<th>${d}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>
+  <br><button class="noprint" onclick="window.print()" style="padding:8px 16px;background:#0f172a;color:#fff;border:none;border-radius:6px;cursor:pointer">🖨️ Imprimir</button>
+  </body></html>`);win.document.close();
+}
+function copyT(){
+  if(!svGrp||!S.schedule[svGrp]){toast("Selecciona un grupo","warn");return;}
+  const sch=S.schedule[svGrp]||{};let txt=`HORARIO ${svGrp} — ${S.center.name}\n\n`;
+  txt+=`       ${DAYS.map(d=>d.padEnd(16)).join("")}\n`;
+  S.slots.forEach(sl=>{if(sl.recess)txt+=`       ${DAYS.map(()=>"RECREO          ").join("")}\n`;else{txt+=`${sl.n}ª  ${sl.time}  `;for(let d=1;d<=5;d++){const ses=sch[d]?.[sl.n];const sub=ses?S.subjects.find(s=>s.code===ses.s):null;txt+=(sub?.name||"—").padEnd(16);}txt+="\n";}});
+  navigator.clipboard.writeText(txt).then(()=>toast("Copiado al portapapeles")).catch(()=>toast("Error al copiar","err"));
+}
+
+// ── Función auxiliar: genera HTML de tabla de horario ────────────
+function buildScheduleTableHTML(schedData, title, subtitle, showTeacher=true){
+  let rows="";
+  S.slots.forEach(sl=>{
+    const isClass=sl.type==="class";
+    const bg = sl.type==="recess"||sl.type==="reading" ? "#fff3cd" :
+               sl.type==="lunch"   ? "#f0f0f0" :
+               sl.type==="library" ? "#e8f0fb" : "#fff";
+    const labelTd=`<td style="background:#f8f9fa;font-weight:700;white-space:nowrap;padding:6px 10px;border:1px solid #dee2e6;font-size:12px;color:#444">
+      <div style="font-weight:800;color:#002b4a">${sl.label}</div>
+      <div style="font-size:10px;color:#888;font-weight:400">${sl.time}</div>
+    </td>`;
+    if(!isClass){
+      rows+=`<tr>${labelTd}${DAYS.map(()=>`<td style="background:${bg};text-align:center;font-size:10px;font-weight:700;color:#888;padding:4px;border:1px solid #dee2e6">${sl.label.toUpperCase()}</td>`).join("")}</tr>`;
+    } else {
+      rows+=`<tr>${labelTd}`;
+      for(let d=1;d<=5;d++){
+        const ses=schedData[d]?.[sl.n];
+        const sub=ses?S.subjects.find(s=>s.code===ses.s):null;
+        const tch=ses&&showTeacher?gt(ses.t):null;
+        if(sub){
+          rows+=`<td style="padding:5px 7px;border:1px solid #dee2e6;background:${bg}">
+            <div style="font-weight:800;font-size:12px;color:#002b4a">${sub.name}</div>
+            ${tch?`<div style="font-size:10px;color:#555;margin-top:1px">${tch.name}</div>`:""}
+          </td>`;
+        } else {
+          rows+=`<td style="padding:5px 7px;border:1px solid #dee2e6;background:#fafafa;color:#ccc;text-align:center;font-size:11px">—</td>`;
+        }
+      }
+      rows+="</tr>";
+    }
+  });
+  return `<div style="margin-bottom:28px">
+    <div style="font-size:18px;font-weight:900;color:#002b4a;text-transform:uppercase;letter-spacing:.02em;margin-bottom:2px">${title}</div>
+    <div style="font-size:12px;color:#666;margin-bottom:10px">${subtitle}</div>
+    <table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif">
+      <thead><tr>
+        <th style="background:#007bc4;color:#fff;padding:8px 10px;border:1px solid #007bc4;font-size:11px;text-transform:uppercase;letter-spacing:.04em;min-width:110px">Franja</th>
+        ${DAYS.map(d=>`<th style="background:#007bc4;color:#fff;padding:8px 10px;border:1px solid #007bc4;font-size:11px;text-transform:uppercase;letter-spacing:.04em">${d}</th>`).join("")}
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+// ── Imprimir horario por GRUPO + horario de su tutor ─────────────
+function printGroupSchedule(){
+  if(!svGrp||!S.schedule[svGrp]){toast("Selecciona un grupo primero","warn");return;}
+  const grp=S.groups.find(g=>g.name===svGrp);
+  const tutor=grp?.tutorId?gt(grp.tutorId):null;
+
+  // Horario del grupo
+  const groupHTML = buildScheduleTableHTML(
+    S.schedule[svGrp],
+    `Horario — Grupo ${svGrp}`,
+    `${S.center.name} · Curso ${S.center.year}${S.activeVersion?" · "+S.activeVersion.name:""}${tutor?" · Tutor/a: "+tutor.name:""}`,
+    true
+  );
+
+  // Horario del tutor (todas sus clases ese día/hora en cualquier grupo)
+  let tutorHTML = "";
+  if(tutor){
+    const tutorSched={};
+    DAYS.forEach((_,di)=>{
+      const d=di+1; tutorSched[d]={};
+      S.slots.filter(s=>s.type==="class").forEach(sl=>{
+        // Buscar en todos los grupos qué tiene el tutor en este día/franja
+        for(const [gname, gsched] of Object.entries(S.schedule)){
+          const cell=gsched[d]?.[sl.n];
+          if(cell?.t===tutor.id){
+            tutorSched[d][sl.n]={...cell, groupName:gname};
+            break;
+          }
+        }
+      });
+    });
+
+    // Construir tabla del tutor con nombre de grupo visible
+    let tutorRows="";
+    S.slots.forEach(sl=>{
+      const isClass=sl.type==="class";
+      const bg=sl.type!=="class"?"#f0f0f0":"#fff";
+      const labelTd=`<td style="background:#f8f9fa;font-weight:700;white-space:nowrap;padding:6px 10px;border:1px solid #dee2e6;font-size:12px">
+        <div style="font-weight:800;color:#002b4a">${sl.label}</div>
+        <div style="font-size:10px;color:#888;font-weight:400">${sl.time}</div>
+      </td>`;
+      if(!isClass){
+        tutorRows+=`<tr>${labelTd}${DAYS.map(()=>`<td style="background:${bg};text-align:center;font-size:10px;font-weight:700;color:#888;padding:4px;border:1px solid #dee2e6">${sl.label.toUpperCase()}</td>`).join("")}</tr>`;
+      } else {
+        tutorRows+=`<tr>${labelTd}`;
+        for(let d=1;d<=5;d++){
+          const cell=tutorSched[d]?.[sl.n];
+          const sub=cell?S.subjects.find(s=>s.code===cell.s):null;
+          if(sub){
+            tutorRows+=`<td style="padding:5px 7px;border:1px solid #dee2e6">
+              <div style="font-weight:800;font-size:12px;color:#002b4a">${sub.name}</div>
+              <div style="font-size:10px;color:#007bc4;font-weight:700">${cell.groupName||""}</div>
+            </td>`;
+          } else {
+            tutorRows+=`<td style="padding:5px 7px;border:1px solid #dee2e6;background:#fafafa;color:#ccc;text-align:center;font-size:11px">—</td>`;
+          }
+        }
+        tutorRows+="</tr>";
+      }
+    });
+
+    tutorHTML=`<div style="margin-bottom:20px">
+      <div style="font-size:18px;font-weight:900;color:#002b4a;text-transform:uppercase;letter-spacing:.02em;margin-bottom:2px">Horario — ${tutor.name}</div>
+      <div style="font-size:12px;color:#666;margin-bottom:10px">Tutor/a del grupo ${svGrp} · Todas sus clases</div>
+      <table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif">
+        <thead><tr>
+          <th style="background:#002b4a;color:#fff;padding:8px 10px;border:1px solid #002b4a;font-size:11px;text-transform:uppercase;letter-spacing:.04em;min-width:110px">Franja</th>
+          ${DAYS.map(d=>`<th style="background:#002b4a;color:#fff;padding:8px 10px;border:1px solid #002b4a;font-size:11px;text-transform:uppercase;letter-spacing:.04em">${d}</th>`).join("")}
+        </tr></thead>
+        <tbody>${tutorRows}</tbody>
+      </table>
+    </div>`;
+  }
+
+  const win=window.open("","_blank");
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Horario ${svGrp} — ${S.center.name}</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:Arial,sans-serif;padding:24px;background:#fff;color:#1a1a1a}
+    .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:14px;border-bottom:3px solid #007bc4}
+    .header h1{font-size:14px;font-weight:900;color:#002b4a;text-transform:uppercase;letter-spacing:.05em}
+    .header p{font-size:11px;color:#888;margin-top:2px}
+    .divider{border:none;border-top:2px dashed #ddd;margin:20px 0}
+    @media print{
+      body{padding:12px}
+      button{display:none!important}
+      .no-break{page-break-inside:avoid}
+    }
+  </style>
+  </head><body>
+  <div class="header">
+    <div>
+      <h1>${S.center.name}</h1>
+      <p>Curso ${S.center.year}${S.activeVersion?" · "+S.activeVersion.name:""}</p>
+    </div>
+    <button onclick="window.print()" style="background:#007bc4;color:#fff;border:none;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;border-radius:3px">🖨️ Imprimir</button>
+  </div>
+  <div class="no-break">${groupHTML}</div>
+  ${tutor?`<hr class="divider"><div class="no-break">${tutorHTML}</div>`:""}
+  </body></html>`);
+  win.document.close();
+}
+
+// ── Imprimir horario por PROFESOR ─────────────────────────────────
+function printTeacherSchedule(){
+  if(!svTch){toast("Selecciona un profesor primero","warn");return;}
+  const tch=gt(svTch); if(!tch)return;
+
+  // Reconstruir horario del profesor buscando en todos los grupos
+  const tSched={};
+  DAYS.forEach((_,di)=>{
+    const d=di+1; tSched[d]={};
+    S.slots.filter(s=>s.type==="class").forEach(sl=>{
+      for(const [gname, gsched] of Object.entries(S.schedule)){
+        const cell=gsched[d]?.[sl.n];
+        if(cell?.t===svTch){ tSched[d][sl.n]={...cell, groupName:gname}; break; }
+      }
+    });
+  });
+
+  // Contar sesiones totales
+  let totalSessions=0;
+  const materiaCount={};
+  DAYS.forEach((_,di)=>{
+    const d=di+1;
+    S.slots.filter(s=>s.type==="class").forEach(sl=>{
+      const cell=tSched[d]?.[sl.n];
+      if(cell){ totalSessions++; materiaCount[cell.s]=(materiaCount[cell.s]||0)+1; }
+    });
+  });
+
+  let rows="";
+  S.slots.forEach(sl=>{
+    const isClass=sl.type==="class";
+    const bg=sl.type!=="class"?"#f0f0f0":"#fff";
+    const labelTd=`<td style="background:#f8f9fa;font-weight:700;white-space:nowrap;padding:6px 10px;border:1px solid #dee2e6;font-size:12px">
+      <div style="font-weight:800;color:#002b4a">${sl.label}</div>
+      <div style="font-size:10px;color:#888;font-weight:400">${sl.time}</div>
+    </td>`;
+    if(!isClass){
+      rows+=`<tr>${labelTd}${DAYS.map(()=>`<td style="background:${bg};text-align:center;font-size:10px;font-weight:700;color:#888;padding:4px;border:1px solid #dee2e6">${sl.label.toUpperCase()}</td>`).join("")}</tr>`;
+    } else {
+      rows+=`<tr>${labelTd}`;
+      for(let d=1;d<=5;d++){
+        const cell=tSched[d]?.[sl.n];
+        const sub=cell?S.subjects.find(s=>s.code===cell.s):null;
+        if(sub){
+          rows+=`<td style="padding:5px 7px;border:1px solid #dee2e6">
+            <div style="font-weight:800;font-size:12px;color:#002b4a">${sub.name}</div>
+            <div style="font-size:10px;color:#007bc4;font-weight:700">${cell.groupName||""}</div>
+          </td>`;
+        } else {
+          rows+=`<td style="padding:5px 7px;border:1px solid #dee2e6;background:#fafafa;color:#ccc;text-align:center;font-size:11px">—</td>`;
+        }
+      }
+      rows+="</tr>";
+    }
+  });
+
+  const resumen=Object.entries(materiaCount).map(([code,n])=>{
+    const s=S.subjects.find(s=>s.code===code);
+    return `<span style="display:inline-block;background:#e6f3fa;color:#002b4a;padding:3px 10px;border-radius:2px;font-size:11px;font-weight:700;margin:2px">${s?.name||code}: ${n}h</span>`;
+  }).join(" ");
+
+  const win=window.open("","_blank");
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Horario ${tch.name} — ${S.center.name}</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:Arial,sans-serif;padding:24px;background:#fff;color:#1a1a1a}
+    .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:3px solid #002b4a}
+    @media print{body{padding:12px}button{display:none!important}}
+  </style>
+  </head><body>
+  <div class="header">
+    <div>
+      <div style="font-size:18px;font-weight:900;color:#002b4a;text-transform:uppercase">${tch.name}</div>
+      <div style="font-size:12px;color:#666;margin-top:3px">${tch.spec||"Docente"} · ${S.center.name} · Curso ${S.center.year}</div>
+      <div style="font-size:12px;color:#007bc4;margin-top:5px;font-weight:700">${totalSessions} sesiones lectivas/semana</div>
+    </div>
+    <button onclick="window.print()" style="background:#002b4a;color:#fff;border:none;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;border-radius:3px">🖨️ Imprimir</button>
+  </div>
+  <table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;margin-bottom:18px">
+    <thead><tr>
+      <th style="background:#002b4a;color:#fff;padding:8px 10px;border:1px solid #002b4a;font-size:11px;text-transform:uppercase;letter-spacing:.04em;min-width:110px">Franja</th>
+      ${DAYS.map(d=>`<th style="background:#002b4a;color:#fff;padding:8px 10px;border:1px solid #002b4a;font-size:11px;text-transform:uppercase;letter-spacing:.04em">${d}</th>`).join("")}
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div style="margin-top:12px"><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Resumen de materias:</div>${resumen}</div>
+  </body></html>`);
+  win.document.close();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PERSISTENCIA — Firebase Firestore (nube) + localStorage (fallback)
+// ══════════════════════════════════════════════════════════════════
+//
+//  ┌─ INSTRUCCIONES DE CONFIGURACIÓN (solo una vez) ──────────────┐
+//  │  1. Ve a https://console.firebase.google.com                 │
+//  │  2. "Añadir proyecto" → ponle un nombre → sin Analytics      │
+//  │  3. En el proyecto: "Firestore Database" → Crear base de     │
+//  │     datos → Modo producción → Ubicación europe-west          │
+//  │  4. En Reglas de Firestore pega esto y publica:              │
+//  │       rules_version = '2';                                   │
+//  │       service cloud.firestore {                              │
+//  │         match /databases/{db}/documents/{doc=**} {           │
+//  │           allow read, write: if true;                        │
+//  │         }                                                    │
+//  │       }                                                      │
+//  │  5. En Configuración del proyecto (⚙️) → "Tu aplicación"    │
+//  │     → icono </> (Web) → registra la app → copia el objeto   │
+//  │     firebaseConfig que aparece y pégalo abajo                │
+//  └──────────────────────────────────────────────────────────────┘
+
+// ═══════════════════════════════════════════════════════════════
+// FIREBASE — Realtime Database
+// ═══════════════════════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyDYIaH-MiXUQtRLG9pn4zDIA97GghxtoSg",
+  authDomain:        "horarios-5b725.firebaseapp.com",
+  databaseURL:       "https://horarios-5b725-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:         "horarios-5b725",
+  storageBucket:     "horarios-5b725.firebasestorage.app",
+  messagingSenderId: "1019689719839",
+  appId:             "1:1019689719839:web:4a2c92a601082be6d6dd2a"
+};
+
+const LS_KEY  = "ceip_monforte_v2";
+const FB_PATH = "ceip_monforte/datos";   // ruta en Realtime Database
+let   fbRef   = null;    // referencia Firebase (null hasta que cargue el SDK)
+let   _saveTimer  = null;
+let   _cloudTimer = null;
+let   _pendingCloud = false;
+
+// ── Indicador visual topbar ──────────────────────────────────
+function showSaved(txt="✓ Guardado en la nube", col="var(--sage)"){
+  const el=document.getElementById("tb-autosave"); if(!el)return;
+  el.textContent=txt; el.style.color=col; el.style.opacity="1";
+  clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(()=>{ el.style.opacity="0"; },2800);
+}
+function showSaving(){
+  const el=document.getElementById("tb-autosave"); if(!el)return;
+  el.textContent="⏳ Guardando…"; el.style.color="var(--orange)"; el.style.opacity="1";
+}
+function showOffline(){
+  const el=document.getElementById("tb-autosave"); if(!el)return;
+  el.textContent="⚠ Sin conexión · guardado local"; el.style.color="var(--orange)"; el.style.opacity="1";
+  clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(()=>{ el.style.opacity="0"; },3500);
+}
+
+// ── localStorage (siempre, como caché instantánea) ───────────
+const LS_KEY2 = LS_KEY;
+function saveLS(){
+  try{ localStorage.setItem(LS_KEY2, JSON.stringify(S)); }catch(e){}
+}
+function loadLS(){
+  try{
+    const raw=localStorage.getItem(LS_KEY2); if(!raw)return false;
+    const d=JSON.parse(raw);
+    Object.keys(d).forEach(k=>{ if(k in S) S[k]=d[k]; });
+    fixSlots();  // migrar formato antiguo
+    return true;
+  }catch(e){ return false; }
+}
+
+// ── Guardar en Realtime Database (debounced 1.5 s) ───────────
+function scheduleCloudSave(){
+  _pendingCloud=true;
+  clearTimeout(_cloudTimer);
+  _cloudTimer=setTimeout(doCloudSave, 1500);
+}
+function doCloudSave(){
+  if(!fbRef){ showOffline(); return; }
+  showSaving();
+  fbRef.set({ data: JSON.stringify(S), ts: Date.now() })
+    .then(()=>{ _pendingCloud=false; showSaved(); })
+    .catch(e=>{ console.warn("RTDB write error:",e); showOffline(); });
+}
+
+// ── Cargar desde Realtime Database ───────────────────────────
+function loadCloud(){
+  return new Promise(resolve=>{
+    if(!fbRef){ resolve(false); return; }
+    fbRef.once("value")
+      .then(snap=>{
+        const val=snap.val();
+        if(!val||!val.data){ resolve(false); return; }
+        const d=JSON.parse(val.data);
+        Object.keys(d).forEach(k=>{ if(k in S) S[k]=d[k]; });
+        fixSlots();  // migrar formato antiguo
+        resolve(true);
+      })
+      .catch(e=>{ console.warn("RTDB read error:",e); resolve(false); });
+  });
+}
+
+// ── save() — localStorage inmediato + nube con debounce ──────
+function save(){
+  saveLS();
+  if(fbRef) scheduleCloudSave();
+  else showSaved("✓ Guardado localmente","var(--tx2)");
+}
+
+// ── Exportar .json ───────────────────────────────────────────
+function exportData(){
+  const a=document.createElement("a");
+  a.href="data:application/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(S,null,2));
+  a.download=`ceip-monforte-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  toast("Copia de seguridad descargada (.json)");
+}
+
+// ── Importar .json ───────────────────────────────────────────
+function importData(e){
+  const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const d=JSON.parse(ev.target.result);
+      Object.keys(d).forEach(k=>{ if(k in S) S[k]=d[k]; });
+      save(); navigate(tab); upd();
+      toast("Datos importados correctamente");
+    }catch{ toast("Error al leer el archivo","err"); }
+  };
+  r.readAsText(f,"UTF-8"); e.target.value="";
+}
+
+// ── Borrar todos los datos ───────────────────────────────────
+function clearAll(){
+  if(!confirm("¿Seguro que quieres borrar TODOS los datos?\nEsta acción no se puede deshacer.")) return;
+  localStorage.removeItem(LS_KEY2);
+  S.teachers=[]; S.groups=[]; S.curriculum={}; S.constraints=[];
+  S.schedule={}; S.activeVersion=null; S.versions=[];
+  S.center={name:"CEIP de Monforte",year:"2024-2025",address:"",phone:"",director:"",code:""};
+  if(fbRef) fbRef.remove().catch(()=>{});
+  navigate("config"); upd();
+  toast("Datos borrados","warn");
+}
+
+// ── saveFBConfig — no necesaria, ya está configurado ─────────
+function saveFBConfig(){ toast("Firebase ya está configurado y activo ✓"); }
+
+// ── Auto-guardar en cualquier interacción ────────────────────
+const _nav=navigate;
+window.navigate=function(t){ _nav(t); save(); };
+document.addEventListener("click",  ()=>save(),{passive:true});
+document.addEventListener("input",  ()=>save(),{passive:true});
+document.addEventListener("change", ()=>save(),{passive:true});
+document.addEventListener("keyup",  ()=>save(),{passive:true});
+window.addEventListener("beforeunload",()=>{ if(_pendingCloud) doCloudSave(); });
+
+// ═══════════════════════════════════════════════════════════════
+// ARRANQUE — Firebase cargado vía script síncrono antes de este bloque
+// ═══════════════════════════════════════════════════════════════
+function bootApp(){
+  // 1. Inicializar Firebase — los scripts ya están en el DOM antes que este código
+  try{
+    if(typeof firebase==="undefined") throw new Error("SDK no cargado");
+    if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    fbRef = firebase.database().ref(FB_PATH);
+    console.log("🔥 Firebase Realtime Database conectado");
+  }catch(e){
+    console.warn("Firebase init error:", e.message);
+    fbRef = null;
+  }
+
+  // 2. Cargar datos guardados (localStorage primero, nube después)
+  const hadLS = loadLS();
+
+  // SIEMPRE forzar las franjas predefinidas correctas
+  // (evita que datos viejos de Firebase sobreescriban las franjas reales del centro)
+  S.slots = DEFAULT_SLOTS.map(s=>({...s}));
+
+  // 3. Renderizar la app
+  navigate("config");
+  if(hadLS && (S.teachers.length + S.groups.length) > 0)
+    toast(`Datos restaurados: ${S.teachers.length} prof · ${S.groups.length} grupos`);
+
+  // 4. Sincronizar con la nube en segundo plano
+  loadCloud().then(hadCloud=>{
+    if(hadCloud){
+      // Volver a forzar franjas correctas después de cargar de la nube
+      S.slots = DEFAULT_SLOTS.map(s=>({...s}));
+      navigate(tab); upd();
+      showSaved("☁️ Sincronizado desde Firebase");
+      toast("☁️ Datos cargados desde la nube");
+    } else if(fbRef){
+      const el=document.getElementById("tb-autosave");
+      if(el){ el.textContent="🔥 Firebase conectado"; el.style.color="var(--sage)"; el.style.opacity="1";
+        setTimeout(()=>{ el.style.opacity="0"; },3000); }
+    }
+  });
+}
+
+// Los scripts de Firebase están en el mismo body antes que este <script>,
+// así que cuando llegamos aquí ya están ejecutados.
+bootApp();
+</script>
+</body>
+</html>
