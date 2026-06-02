@@ -2123,33 +2123,130 @@ function delCr(id){S.constraints=S.constraints.filter(c=>c.id!==id);navigate("co
 function pgGenerator(c){
   const ok=S.teachers.length>0&&S.groups.length>0&&Object.keys(S.curriculum).length>0;
   const totalSess=Object.values(S.curriculum).flat().reduce((a,e)=>a+e.sessions,0);
-  c.innerHTML=`<div class="sh2"><div><h1>Generador CSP</h1><p>Motor de backtracking · MRV · Forward Checking</p></div></div>
+  const classSlots=S.slots.filter(s=>s.type==="class").map(s=>s.n);
+  const DAYS_N=[1,2,3,4,5];
+
+  // ── Análisis de cuellos de botella ───────────────────────────────
+  function bottleneckAnalysis(){
+    const items=[];
+    // Por profesor
+    S.teachers.forEach(t=>{
+      const sessions=Object.values(S.curriculum).flat()
+        .filter(e=>e.tid===t.id).reduce((s,e)=>s+e.sessions,0);
+      if(sessions===0) return;
+      const unavail=(t.unavail||[]).filter(u=>classSlots.includes(u.s)).length;
+      const available=classSlots.length*5-unavail;
+      const pressure=available>0?sessions/available:999;
+      const nGroups=new Set(
+        Object.entries(S.curriculum).filter(([,cur])=>cur.some(e=>e.tid===t.id)).map(([gid])=>gid)
+      ).size;
+      items.push({type:'teacher',name:t.name,sessions,available,pressure,nGroups,color:t.color||'#475569'});
+    });
+    // Por grupo
+    S.groups.forEach(g=>{
+      const cur=S.curriculum[g.id]||[];
+      const sessions=cur.reduce((s,e)=>s+e.sessions,0);
+      if(sessions===0) return;
+      // Contar franjas "bloqueadas" por no-disponibilidades de especialistas
+      let blockedSlots=0;
+      cur.forEach(e=>{
+        if(!e.tid) return;
+        const t=S.teachers.find(t=>t.id===e.tid);
+        blockedSlots+=(t?.unavail||[]).filter(u=>classSlots.includes(u.s)).length;
+      });
+      const effective=classSlots.length*5;
+      const pressure=sessions/effective;
+      if(pressure>0.85||blockedSlots>3) items.push({type:'group',name:g.name,sessions,available:effective,pressure,blockedSlots,color:'#0ea5e9'});
+    });
+    return items.sort((a,b)=>b.pressure-a.pressure);
+  }
+
+  const bottlenecks=ok?bottleneckAnalysis():[];
+  const critical=bottlenecks.filter(b=>b.pressure>0.85);
+  const warned=bottlenecks.filter(b=>b.pressure>0.65&&b.pressure<=0.85);
+
+  function pressureBar(p){
+    const pct=Math.min(100,Math.round(p*100));
+    const col=p>0.85?'#f87171':p>0.65?'#fbbf24':'#4ade80';
+    return `<div style="display:flex;align-items:center;gap:6px">
+      <div style="flex:1;height:5px;background:var(--bd);border-radius:3px">
+        <div style="width:${pct}%;height:100%;background:${col};border-radius:3px"></div>
+      </div>
+      <span style="font-size:10px;font-weight:700;color:${col};min-width:32px">${pct}%</span>
+    </div>`;
+  }
+
+  c.innerHTML=`<div class="sh2"><div><h1>Generador CSP</h1><p>Motor híbrido · MRV · Forward Checking · Ejection Chains · LNS</p></div></div>
   ${!ok?`<div class="card" style="border-color:var(--amd)"><div class="empty">
     <div class="ei">⚠️</div><div class="et">Faltan datos para generar</div>
     <div class="es">${S.teachers.length===0?'❌':'✅'} Profesores (${S.teachers.length})<br>${S.groups.length===0?'❌':'✅'} Grupos (${S.groups.length})<br>${Object.keys(S.curriculum).length===0?'❌':'✅'} Curriculum configurado</div>
   </div></div>`:`
   <div style="display:grid;grid-template-columns:300px 1fr;gap:14px">
     <div style="display:flex;flex-direction:column;gap:11px">
-      <div class="card">
-        <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:11px">Pesos de restricciones blandas</div>
-        ${[["w1","Instrumentales en primeras horas",3],["w3","Distribuir sesiones por semana",3],["w4","Evitar última hora",2],["w5","No misma materia consecutiva",3]].map(([id,l,v])=>`
-        <div style="margin-bottom:10px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-            <span style="font-size:12px;color:var(--tx2)">${l}</span>
-            <span style="font-size:12px;font-weight:700;color:var(--bl2)" id="${id}v">${v}</span>
+
+      <!-- Panel cuellos de botella -->
+      <div class="card" style="border-color:${critical.length>0?'#f87171':warned.length>0?'#fbbf24':'#4ade80'}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:13px;font-weight:800;color:var(--tx)">
+            ${critical.length>0?'⚠️':'✅'} Análisis previo
+          </span>
+          <span class="b ${critical.length>0?'br':warned.length>0?'ba':'bg'}" style="font-size:10px">
+            ${critical.length>0?`${critical.length} crítico${critical.length>1?'s':''}`:warned.length>0?`${warned.length} advertencia${warned.length>1?'s':''}`:'Sin riesgos'}
+          </span>
+        </div>
+
+        ${critical.length>0?`
+        <div style="margin-bottom:8px">
+          <div style="font-size:10px;font-weight:700;color:#f87171;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">🔴 Críticos (presión &gt;85%)</div>
+          ${critical.map(b=>`
+          <div style="padding:6px 8px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.3);border-radius:5px;margin-bottom:4px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+              <span style="font-size:11px;font-weight:700;color:${b.color}">${b.name}</span>
+              <span style="font-size:10px;color:var(--tx3)">${b.sessions}/${b.available} ses.</span>
+            </div>
+            ${pressureBar(b.pressure)}
+            ${b.type==='teacher'&&b.nGroups>4?`<div style="font-size:9px;color:#fbbf24;margin-top:2px">⚠ ${b.nGroups} grupos — muy repartido</div>`:''}
+            ${b.type==='group'&&b.blockedSlots>3?`<div style="font-size:9px;color:#fbbf24;margin-top:2px">⚠ ${b.blockedSlots} franjas bloqueadas por especialistas</div>`:''}
+          </div>`).join("")}
+        </div>`:``}
+
+        ${warned.length>0?`
+        <div style="margin-bottom:8px">
+          <div style="font-size:10px;font-weight:700;color:#fbbf24;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">🟡 Ajustados (65–85%)</div>
+          ${warned.slice(0,4).map(b=>`
+          <div style="padding:5px 7px;background:rgba(251,191,36,.06);border-radius:4px;margin-bottom:3px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:2px">
+              <span style="font-size:11px;color:var(--tx2)">${b.name}</span>
+              <span style="font-size:10px;color:var(--tx3)">${b.sessions}/${b.available}</span>
+            </div>
+            ${pressureBar(b.pressure)}
+          </div>`).join("")}
+          ${warned.length>4?`<div style="font-size:10px;color:var(--tx3);text-align:center;padding-top:4px">+${warned.length-4} más</div>`:''}
+        </div>`:``}
+
+        ${critical.length===0&&warned.length===0?`
+        <div style="text-align:center;color:var(--tx3);font-size:12px;padding:8px 0">
+          Todos los profesores tienen margen suficiente.<br>El motor debería resolver sin problemas.
+        </div>`:``}
+
+        <!-- Tabla resumen -->
+        <div style="border-top:1px solid var(--bd);padding-top:8px;margin-top:4px">
+          <div style="font-size:10px;color:var(--tx3);margin-bottom:5px;font-weight:700">RESUMEN</div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--tx2);padding:2px 0">
+            <span>Sesiones totales</span><span class="b bb">${totalSess}</span>
           </div>
-          <input type="range" min="1" max="10" value="${v}" id="${id}" oninput="$('${id}v').textContent=this.value">
-        </div>`).join("")}
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--tx2);padding:2px 0">
+            <span>Profesores</span><span class="b bb">${S.teachers.length}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--tx2);padding:2px 0">
+            <span>Grupos</span><span class="b bb">${S.groups.length}</span>
+          </div>
+        </div>
       </div>
-      <div class="card">
-        <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:8px">Datos cargados</div>
-        ${[["Profesores",S.teachers.length],["Grupos",S.groups.length],["Materias",S.subjects.length],["Restricciones",S.constraints.length],["Sesiones totales",totalSess]].map(([l,v])=>`
-        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--bd);font-size:12px">
-          <span style="color:var(--tx2)">${l}</span><span class="b bb">${v}</span>
-        </div>`).join("")}
-      </div>
+
       <button class="btn bg2" id="gbtn" style="width:100%;padding:11px;justify-content:center;font-size:14px" onclick="runGen()">⚡ Generar horario</button>
     </div>
+
     <div style="display:flex;flex-direction:column;gap:11px">
       <div style="background:#050d18;border:1px solid var(--bd);border-radius:var(--r)">
         <div style="padding:10px 13px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between">
@@ -2161,15 +2258,40 @@ function pgGenerator(c){
         </div>
         <div class="glog" id="glog"><div style="color:var(--tx3);text-align:center;margin-top:44px;font-size:13px"><div style="font-size:24px;margin-bottom:7px">⚡</div>Pulsa "Generar horario" para iniciar</div></div>
       </div>
-      <div class="card"><div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:9px">Modelo matemático del CSP</div>
-        <div class="g3" style="gap:8px">
-          ${[["Variable de decisión","X[g][s][d][t] ∈ {0,1}\ng=grupo, s=materia\nd=día (1..5)\nt=franja (1..N)\nX=1 ↔ grupo g tiene la\nmateria s el día d, franja t"],["Restricciones duras","C1: ≤1 materia/grupo/franja\nC2: cumplir curriculum\nC3: sin duplicar profesor\nC4: respetar disponibilidad\nC5: no asignar en recreos"],["Función objetivo","MAXIMIZAR Σi wi·sat_i(X)\nw1: instrumentales mañana\nw3: distribuir sesiones\nw4: evitar última hora\nw5: no consecutivas iguales"]].map(([t2,con])=>`
-          <div style="background:var(--surf2);border-radius:var(--rs);padding:9px">
-            <div style="font-size:11px;font-weight:700;color:var(--tx2);margin-bottom:5px">${t2}</div>
-            <pre style="font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3);white-space:pre-wrap;margin:0;line-height:1.7">${con}</pre>
-          </div>`).join("")}
+
+      <!-- Tabla presión detallada -->
+      ${bottlenecks.length>0?`
+      <div class="card">
+        <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:9px">📊 Presión por profesor</div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:11px">
+            <thead><tr style="color:var(--tx3);border-bottom:1px solid var(--bd)">
+              <th style="text-align:left;padding:4px 6px;font-weight:600">Profesor</th>
+              <th style="text-align:center;padding:4px 6px;font-weight:600">Ses.</th>
+              <th style="text-align:center;padding:4px 6px;font-weight:600">Huecos</th>
+              <th style="text-align:center;padding:4px 6px;font-weight:600">Presión</th>
+              <th style="text-align:left;padding:4px 6px;font-weight:600" colspan="2"></th>
+            </tr></thead>
+            <tbody>
+            ${bottlenecks.filter(b=>b.type==='teacher').map(b=>{
+              const pct=Math.min(100,Math.round(b.pressure*100));
+              const col=b.pressure>0.85?'#f87171':b.pressure>0.65?'#fbbf24':'#4ade80';
+              return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+                <td style="padding:5px 6px;color:${b.color};font-weight:600">${b.name.split(' ')[0]}</td>
+                <td style="text-align:center;padding:5px 6px;color:var(--tx2)">${b.sessions}</td>
+                <td style="text-align:center;padding:5px 6px;color:var(--tx2)">${b.available}</td>
+                <td style="text-align:center;padding:5px 6px;color:${col};font-weight:700">${pct}%</td>
+                <td style="padding:5px 6px;width:80px">
+                  <div style="height:4px;background:var(--bd);border-radius:2px">
+                    <div style="width:${pct}%;height:100%;background:${col};border-radius:2px"></div>
+                  </div>
+                </td>
+              </tr>`;
+            }).join("")}
+            </tbody>
+          </table>
         </div>
-      </div>
+      </div>`:``}
     </div>
   </div>`}`;
 }
@@ -2188,83 +2310,72 @@ function runGenEngine(){
   const t0=Date.now();
   const lectSlots=S.slots.filter(s=>s.type==="class").map(s=>s.n);
   const DAYS_N=[1,2,3,4,5];
-
-  // Solo primaria — infantil eliminado temporalmente
+  const DAYS=["Lun","Mar","Mié","Jue","Vie"];
+  const slot_labels={1:"1ª",2:"2ª",3:"3ª",6:"4ª",7:"5ª"};
   const primGroups=S.groups.filter(g=>g.level==="primaria");
+  const infGroups=S.groups.filter(g=>g.level==="infantil");
 
   const sched={};
   primGroups.forEach(g=>{ sched[g.name]={}; DAYS_N.forEach(d=>{ sched[g.name][d]={}; }); });
+  infGroups.forEach(g=>{ sched[g.name]={}; DAYS_N.forEach(d=>{ sched[g.name][d]={}; }); });
 
   const teacherBusy={};
   S.teachers.forEach(t=>{
-    teacherBusy[t.id]={};
-    DAYS_N.forEach(d=>{ teacherBusy[t.id][d]={}; });
+    teacherBusy[t.id]={}; DAYS_N.forEach(d=>{ teacherBusy[t.id][d]={}; });
     (t.unavail||[]).forEach(u=>{ teacherBusy[t.id][u.d][u.s]=true; });
   });
 
-  // Tareas: solo primaria
+  // ── FASE 1: ESPECIALISTAS INFANTIL EN LIBRANZAS ─────────────────
+  if(infGroups.length>0){
+    infGroups.forEach(g=>{
+      const tutor=S.teachers.find(t=>t.id===g.tutorId);
+      const tutorUnavail=(tutor?.unavail||[]).filter(u=>lectSlots.includes(u.s));
+      if(!tutorUnavail.length) return;
+      const specTasks=[];
+      (S.curriculum[g.id]||[]).forEach(e=>{
+        if(e.sessions>0&&e.tid!==g.tutorId){
+          const code=S.subjects.find(s=>s.id===e.sid)?.code||"???";
+          specTasks.push({tid:e.tid,code,sessions:e.sessions,remaining:e.sessions});
+        }
+      });
+      for(const u of tutorUnavail){
+        const {d:day,s:slot}=u;
+        if(sched[g.name][day]?.[slot]) continue;
+        const candidate=specTasks.find(t=>t.remaining>0&&!(teacherBusy[t.tid]?.[day]?.[slot]));
+        if(!candidate) continue;
+        sched[g.name][day][slot]={s:candidate.code,t:candidate.tid};
+        teacherBusy[candidate.tid][day][slot]=true;
+        candidate.remaining--;
+      }
+    });
+    infGroups.forEach(g=>{ S.schedule[g.name]=sched[g.name]; });
+    const cnt=infGroups.reduce((s,g)=>s+DAYS_N.reduce((s2,d)=>s2+lectSlots.filter(sl=>sched[g.name][d]?.[sl]).length,0),0);
+    const infLn=document.createElement("div");
+    infLn.style.color="#4ade80";
+    infLn.textContent=`✅ Fase 1 infantil: ${cnt} ses. en libranzas`;
+    $("glog").appendChild(infLn); $("glog").scrollTop=$("glog").scrollHeight;
+  }
+
+  // Marcar infantil en teacherBusy para primaria
+  infGroups.forEach(g=>{
+    DAYS_N.forEach(day=>lectSlots.forEach(slot=>{
+      const cell=sched[g.name][day]?.[slot];
+      if(cell?.t) teacherBusy[cell.t][day][slot]=true;
+    }));
+  });
+
+  // ── TAREAS DE PRIMARIA ──────────────────────────────────────────
   const tasks=[];
   primGroups.forEach(g=>{
     (S.curriculum[g.id]||[]).forEach(e=>{
       if(e.sessions>0){
-        tasks.push({gname:g.name,sid:e.sid,tid:e.tid,sessions:e.sessions,
-          code:S.subjects.find(s=>s.id===e.sid)?.code||"???",_placed:false});
+        const code=S.subjects.find(s=>s.id===e.sid)?.code||"???";
+        tasks.push({gname:g.name,sid:e.sid,tid:e.tid,sessions:e.sessions,code,_placed:false});
       }
     });
   });
 
-  // Espacio compartido
-  const sharedSpaceMap={};
-  S.constraints.filter(c=>c.type==="shared_space"&&c.isHard&&c.subject).forEach(c=>{
-    const groups=c.groups||c.target.split(",").map(g=>g.trim());
-    if(!sharedSpaceMap[c.subject]) sharedSpaceMap[c.subject]=[];
-    sharedSpaceMap[c.subject].push(groups);
-  });
-
-  function violatesSharedSpace(gname,code,day,slot){
-    const rules=sharedSpaceMap[code];
-    if(!rules) return false;
-    for(const group of rules){
-      if(!group.includes(gname)) continue;
-      for(const other of group){
-        if(other===gname) continue;
-        if(sched[other]?.[day]?.[slot]?.s===code) return true;
-      }
-    }
-    return false;
-  }
-
-  // No-disponibilidades del tutor
-  const tutorUnavailSlots={};
-  S.teachers.forEach(t=>{
-    tutorUnavailSlots[t.id]=new Set((t.unavail||[]).map(u=>`${u.d}-${u.s}`));
-  });
-
-  function getSpecialistSlotsForGroup(gname){
-    const g=S.groups.find(g=>g.name===gname);
-    if(!g?.tutorId) return new Set();
-    return tutorUnavailSlots[g.tutorId]||new Set();
-  }
-
-  function getFreeSlots(gname,tid,day,code){
-    // Oscar solo puede dar EF martes(2), jueves(4) y viernes(5)
-    // No intentar lunes ni miércoles — ahorra tiempo y evita bloqueos
-    const tname=tid?gt(tid)?.name:'';
-    if(tname==='Oscar'&&![2,4,5].includes(day)) return [];
-
-    const mustFill=getSpecialistSlotsForGroup(gname);
-    const groupTutorId=S.groups.find(g=>g.name===gname)?.tutorId;
-    const isTutorOwn=tid&&tid===groupTutorId;
-    return lectSlots.filter(slot=>{
-      if(sched[gname][day][slot]) return false;
-      if(tid&&teacherBusy[tid][day][slot]) return false;
-      if(code&&violatesSharedSpace(gname,code,day,slot)) return false;
-      if(isTutorOwn&&mustFill.has(`${day}-${slot}`)) return false;
-      return true;
-    });
-  }
-
-  // Criticidad (solo primaria)
+  // Criticidad = sesiones_necesarias / franjas_disponibles
   const tutorCrossGroupCount={};
   S.teachers.forEach(t=>{
     const own=primGroups.find(g=>g.tutorId===t.id);
@@ -2290,6 +2401,156 @@ function runGenEngine(){
       if(task.tid===t.id&&task.gname!==own.name) crossGroupSessions.add(task);
     });
   });
+
+  const sharedSpaceMap={};
+  S.constraints.filter(c=>c.type==="shared_space"&&c.isHard&&c.subject).forEach(c=>{
+    const groups=c.groups||c.target.split(",").map(g=>g.trim());
+    if(!sharedSpaceMap[c.subject]) sharedSpaceMap[c.subject]=[];
+    sharedSpaceMap[c.subject].push(groups);
+  });
+
+  function violatesSharedSpace(gname,code,day,slot){
+    const rules=sharedSpaceMap[code];
+    if(!rules) return false;
+    for(const group of rules){
+      if(!group.includes(gname)) continue;
+      for(const other of group){
+        if(other===gname) continue;
+        const cell=sched[other]?.[day]?.[slot];
+        if(cell&&cell.s===code) return true;
+      }
+    }
+    return false;
+  }
+
+  const tutorUnavailSlots={};
+  S.teachers.forEach(t=>{
+    tutorUnavailSlots[t.id]=new Set((t.unavail||[]).map(u=>`${u.d}-${u.s}`));
+  });
+
+  function getSpecialistSlotsForGroup(gname){
+    const g=S.groups.find(g=>g.name===gname);
+    if(!g?.tutorId) return new Set();
+    return tutorUnavailSlots[g.tutorId]||new Set();
+  }
+
+  function getFreeSlots(gname,tid,day,code){
+    const mustFill=getSpecialistSlotsForGroup(gname);
+    const groupTutorId=S.groups.find(g=>g.name===gname)?.tutorId;
+    const isTutorOwn=tid&&tid===groupTutorId;
+    return lectSlots.filter(slot=>{
+      if(sched[gname][day][slot]) return false;
+      if(tid&&teacherBusy[tid][day][slot]) return false;
+      if(code&&violatesSharedSpace(gname,code,day,slot)) return false;
+      if(isTutorOwn&&mustFill.has(`${day}-${slot}`)) return false;
+      return true;
+    });
+  }
+
+  // ── PRESSURE SCORING DINÁMICO ────────────────────────────────────
+  // Calcula la presión ACTUAL de cada tarea en tiempo real
+  // pressure = sesiones_necesarias / franjas_disponibles
+  // Cuanto mayor, más urgente colocar esta tarea primero
+  function taskPressure(task){
+    if(!task.tid) return 0;
+    let free=0;
+    DAYS_N.forEach(d=>{ free+=getFreeSlots(task.gname,task.tid,d,task.code).length; });
+    return free>0?task.sessions/free:999;
+  }
+
+  // ── FORWARD CHECKING REAL ────────────────────────────────────────
+  // Después de colocar una sesión en (gname,day,slot,tid):
+  // Verifica que TODAS las tareas pendientes del mismo profesor
+  // y del mismo grupo siguen teniendo al menos 1 slot posible.
+  // Si alguna queda sin slots → fallo inmediato (detectar temprano).
+  function forwardCheck(placedTid,placedGname,placedDay,placedSlot){
+    // 1. Verificar tareas pendientes del mismo profesor
+    for(const task of tasks){
+      if(task._placed) continue;
+      if(task.tid!==placedTid) continue;
+      let free=0;
+      DAYS_N.forEach(d=>{ free+=getFreeSlots(task.gname,task.tid,d,task.code).length; });
+      if(free<task.sessions) return false; // dominio vacío
+    }
+    // 2. Verificar tareas pendientes del mismo grupo
+    for(const task of tasks){
+      if(task._placed) continue;
+      if(task.gname!==placedGname) continue;
+      if(!task.tid) continue;
+      let free=0;
+      DAYS_N.forEach(d=>{ free+=getFreeSlots(task.gname,task.tid,d,task.code).length; });
+      if(free<task.sessions) return false; // dominio vacío
+    }
+    return true;
+  }
+
+  // ── EJECTION CHAINS (swaps encadenados) ─────────────────────────
+  // A→B→C→D→hueco libre: mucho más potente que swaps simples A↔B
+  // Profundidad máxima de cadena: 4 pasos
+  function ejectionChain(failedTask, depth=0, visited=new Set()){
+    if(depth>4) return false;
+    if(!failedTask.tid) return false;
+
+    for(const day of DAYS_N){
+      for(const slot of lectSlots){
+        // ¿Puede ir la tarea fallida aquí?
+        if(sched[failedTask.gname][day][slot]) continue;
+        if(teacherBusy[failedTask.tid][day][slot]){
+          // El profesor está ocupado aquí — ¿en qué otro grupo?
+          for(const og of primGroups){
+            if(og.name===failedTask.gname) continue;
+            const blocker=sched[og.name][day]?.[slot];
+            if(!blocker||blocker.t!==failedTask.tid) continue;
+            const key=`${og.name}-${blocker.s}-${day}-${slot}`;
+            if(visited.has(key)) continue;
+            visited.add(key);
+            // Intentar mover el bloqueante a otro hueco
+            const blockerTask={gname:og.name,code:blocker.s,tid:blocker.t,sessions:1};
+            // Guardar estado
+            const savedCell=sched[og.name][day][slot];
+            delete sched[og.name][day][slot];
+            delete teacherBusy[failedTask.tid][day][slot];
+            // Intentar colocar el bloqueante en otro sitio (recursivo)
+            let moved=false;
+            for(const ad of DAYS_N){
+              for(const as of lectSlots){
+                if(ad===day&&as===slot) continue;
+                if(sched[og.name][ad]?.[as]) continue;
+                if(blocker.t&&teacherBusy[blocker.t][ad][as]) continue;
+                if(violatesSharedSpace(og.name,blocker.s,ad,as)) continue;
+                if(blocker.s==="REL"&&og.tutorId&&sched[og.name][ad]?.[as]?.t===og.tutorId) continue;
+                // Mover bloqueante
+                sched[og.name][ad][as]=savedCell;
+                if(blocker.t) teacherBusy[blocker.t][ad][as]=true;
+                // ¿Ahora puede ir la tarea fallida?
+                if(!teacherBusy[failedTask.tid][day][slot]&&
+                   !violatesSharedSpace(failedTask.gname,failedTask.code,day,slot)){
+                  sched[failedTask.gname][day][slot]={s:failedTask.code,t:failedTask.tid};
+                  teacherBusy[failedTask.tid][day][slot]=true;
+                  return true;
+                }
+                // No pudo — intentar cadena más profunda
+                if(ejectionChain({gname:og.name,code:blocker.s,tid:blocker.t,sessions:1,_placed:false},
+                                  depth+1, visited)){
+                  sched[failedTask.gname][day][slot]={s:failedTask.code,t:failedTask.tid};
+                  teacherBusy[failedTask.tid][day][slot]=true;
+                  return true;
+                }
+                // Revertir movimiento del bloqueante
+                delete sched[og.name][ad][as];
+                if(blocker.t) delete teacherBusy[blocker.t][ad][as];
+              }
+              if(moved) break;
+            }
+            // Revertir: restaurar bloqueante
+            sched[og.name][day][slot]=savedCell;
+            teacherBusy[failedTask.tid][day][slot]=true;
+          }
+        }
+      }
+    }
+    return false;
+  }
 
   const mikelId=S.teachers.find(t=>t.name==="Mikel")?.id||null;
 
@@ -2351,12 +2612,8 @@ function runGenEngine(){
     const isTutorOwn=own&&own.name===task.gname;
     const isCross=crossGroupSessions.has(task);
 
-    // Oscar primero — margen cero
-    if(tname==="Oscar") return 0.05;
-
     // CLAVE: materias del tutor con MUCHAS sesiones (≥3) en su grupo van ANTES
     // que REL cross-group. Así se reservan sus franjas críticas primero.
-    // Esto evita que REL en otros grupos bloquee las franjas que MAT/LCL/LGL necesitan.
     if(isTutorOwn&&task.sessions>=3) return 0.3;
 
     if(isCross){
@@ -2365,7 +2622,8 @@ function runGenEngine(){
       return 0.5+(criticality[tid]||0)*0.4;
     }
     if(isTutorOwn&&task.sessions===2) return 1;
-    if(tname==="Mikel") return 3+mikelSubPriority(task)*0.1;
+    // Mikel: 95% presión, margen +1 → colocar inmediatamente después de cross-group
+    if(tname==="Mikel") return 1.5+mikelSubPriority(task)*0.1;
     if(tname==="Diego") return 4;
     if(tname==="Richi") return 6;
     if(tname==="Noelia"&&task.gname==="1ºB") return 2.5;
@@ -2426,6 +2684,17 @@ function runGenEngine(){
     if(pressure>=2){
       if(isSpec)  score-=pressure*5;
       else        score+=pressure*8;
+    }
+
+    // ── RICHI: preferir Mié y Lun primeras horas (pabellón libre de Oscar) ──
+    const richiId=S.teachers.find(t=>t.name==="Richi")?.id||null;
+    if(tid===richiId){
+      // Mié: Oscar no puede ir (sindicato) → pabellón libre
+      if(day===3) score-=15;
+      // Lun primeras horas: Oscar bloqueado → pabellón libre
+      if(day===1&&slot<=3) score-=12;
+      // Evitar Mar/Jue/Vie donde Oscar puede coincidir
+      if([2,4,5].includes(day)) score+=5;
     }
 
     return score;
@@ -2619,13 +2888,17 @@ function runGenEngine(){
     const mustFillSlots=getSpecialistSlotsForGroup(task.gname);
 
     // ── CASO ESPECIAL: Elba (Religión en paralelo con Proyecto Competencial) ──
-    // Elba debe ir en la MISMA franja que quien ya colocó REL/PC en este grupo
+    // Elba debe ir en la MISMA franja que quien ya colocó REL/PC en este grupo.
+    // La celda guarda el profesor de PC en .t y Elba en .t2 (desdoble)
     if(task.tid===elbaId&&task.code==="REL"){
       const relSlot=getTutorRelSlot(task.gname);
       if(relSlot){
         const {day,slot}=relSlot;
         if(!teacherBusy[elbaId][day][slot]){
-          sched[task.gname][day][slot]={s:"REL",t:elbaId,parallel:true};
+          // Añadir Elba como segundo profesor (t2) en la celda existente
+          const existing=sched[task.gname][day][slot];
+          if(existing){ existing.t2=elbaId; existing.parallel=true; }
+          else sched[task.gname][day][slot]={s:"REL",t:elbaId,parallel:true};
           teacherBusy[elbaId][day][slot]=true;
           task._placed=true; return true;
         } else {
@@ -2634,7 +2907,6 @@ function runGenEngine(){
           return false;
         }
       } else {
-        // REL del otro profesor aún no colocada — aplazar Elba
         conflicts.push({task,remaining:1,
           reason:`REL/PC de ${task.gname} aún no colocada — Elba pendiente`});
         return false;
@@ -2689,18 +2961,61 @@ function runGenEngine(){
           if(mf.length>0) free=mf; else continue;
         }
         if(free.length===0) continue;
-        const slot=free.map(s=>({s,score:scoreSlot(task.gname,task.tid,day,s,task.code)}))
-                       .sort((a,b)=>a.score-b.score)[0].s;
-        sched[task.gname][day][slot]={s:task.code,t:task.tid};
-        if(task.tid) teacherBusy[task.tid][day][slot]=true;
-        placements.push({day,slot}); dayCount[day]++; remaining--;
+        const scored=free.map(slot=>({slot,score:scoreSlot(task.gname,task.tid,day,slot,task.code)}))
+                        .sort((a,b)=>a.score-b.score);
+
+        // LCV + Forward Checking: elegir slot que menos daño cause al futuro
+        let chosenSlot=null;
+        for(const {slot} of scored){
+          // Colocar provisionalmente
+          sched[task.gname][day][slot]={s:task.code,t:task.tid};
+          if(task.tid) teacherBusy[task.tid][day][slot]=true;
+          // Forward check: ¿quedan franjas suficientes para tareas futuras?
+          if(forwardCheck(task.tid,task.gname,day,slot)){
+            chosenSlot=slot; break;
+          }
+          // Revertir — este slot compromete el futuro
+          delete sched[task.gname][day][slot];
+          if(task.tid) delete teacherBusy[task.tid][day][slot];
+        }
+        // Si ninguno pasa el FC, usar el mejor igualmente (no bloquear)
+        if(chosenSlot===null&&scored.length>0){
+          chosenSlot=scored[0].slot;
+          sched[task.gname][day][chosenSlot]={s:task.code,t:task.tid};
+          if(task.tid) teacherBusy[task.tid][day][chosenSlot]=true;
+        }
+        if(chosenSlot===null) continue;
+        placements.push({day,slot:chosenSlot}); dayCount[day]++; remaining--;
+      }
+    }
+
+    // ── PASADA GARANTIZADA: si quedan sesiones y hay huecos directos, colocar sin FC ──
+    if(remaining>0&&task.tid){
+      for(const day of DAYS_N){
+        if(remaining<=0) break;
+        for(const slot of lectSlots){
+          if(remaining<=0) break;
+          if(sched[task.gname][day][slot]) continue;
+          if(teacherBusy[task.tid][day][slot]) continue;
+          if(violatesSharedSpace(task.gname,task.code,day,slot)) continue;
+          sched[task.gname][day][slot]={s:task.code,t:task.tid};
+          teacherBusy[task.tid][day][slot]=true;
+          placements.push({day,slot}); remaining--;
+        }
       }
     }
 
     if(remaining>0){
       let repaired=0;
+      // 1º swap simple
       for(let i=0;i<remaining;i++) if(trySwapRepair({...task,sessions:1})) repaired++;
       remaining-=repaired;
+      // 2º ejection chains (A→B→C→hueco libre)
+      if(remaining>0){
+        for(let i=0;i<remaining;i++){
+          if(ejectionChain({...task,sessions:1,_placed:false})){ remaining--; }
+        }
+      }
       if(remaining>0){
         let reason="sin profesor asignado";
         if(task.tid){
@@ -2727,48 +3042,191 @@ function runGenEngine(){
     if(load>cap) diagWarnings.push(`⚠️ IMPOSIBLE: ${gt(tid)?.name} tiene ${load} ses. pero solo ${cap} franjas`);
   });
 
-  // Ordenación de tareas
-  tasks.sort((a,b)=>{
-    const pa=taskPriority(a),pb=taskPriority(b);
-    if(pa!==pb) return pa-pb;
-    if(a.tid===mikelId&&b.tid===mikelId) return mikelSubPriority(a)-mikelSubPriority(b);
-    const aTown=primGroups.find(g=>g.name===a.gname)?.tutorId===a.tid;
-    const bTown=primGroups.find(g=>g.name===b.gname)?.tutorId===b.tid;
-    if(aTown&&bTown&&a.tid===b.tid) return a.sessions-b.sessions;
-    if(a.tid===b.tid&&a.tid) return a.sessions-b.sessions;
-    const ca=criticality[a.tid]||0,cb=criticality[b.tid]||0;
-    if(Math.abs(ca-cb)>0.05) return cb-ca;
-    return b.sessions-a.sessions;
-  });
+  // ── ORDENACIÓN INICIAL: MRV + PRESSURE SCORING ───────────────────
+  // Ordena por prioridad dura primero, luego por presión dinámica
+  // (sesiones/franjas_disponibles) — las más apretadas van primero
+  function sortTasks(){
+    tasks.sort((a,b)=>{
+      const pa=taskPriority(a),pb=taskPriority(b);
+      const blockA=Math.floor(pa),blockB=Math.floor(pb);
+      if(blockA!==blockB) return blockA-blockB;
+      // Dentro del mismo bloque: ordenar por presión dinámica (MRV)
+      const pressA=taskPressure(a), pressB=taskPressure(b);
+      if(Math.abs(pressA-pressB)>0.1) return pressB-pressA; // más presión → antes
+      if(a.tid===mikelId&&b.tid===mikelId) return mikelSubPriority(a)-mikelSubPriority(b);
+      if(a.tid===b.tid&&a.tid) return a.sessions-b.sessions;
+      return b.sessions-a.sessions;
+    });
+  }
+  try{ sortTasks(); }catch(e){
+    const ln=document.createElement("div"); ln.style.color="#f87171";
+    ln.textContent=`❌ Error en sortTasks: ${e.message}`;
+    $("glog").appendChild(ln); $("glog").scrollTop=$("glog").scrollHeight;
+  }
 
-  // Ejecución con reintentos
+  // ── NUEVO ENFOQUE: Generar → Reparar → Reiniciar solo si necesario ──
+  // En vez de 4000 reinicios completos:
+  // 1. Generar horario completo
+  // 2. Si hay conflictos → aplicar múltiples pasadas de swap repair
+  // 3. Solo si N pasadas de repair no resuelven → reiniciar con orden diferente
+  
   const MAX_ITER=4000;
   let bestSched=null,bestPlaced=0,bestSkipped=Infinity,bestConflicts=[];
   let placed=0,skipped=0,conflicts=[];
   let iterUsed=0;
 
   async function runIterations(){
+    // Yield inmediato para que el navegador pinte el log de fase 1
+    await new Promise(r=>setTimeout(r,50));
+    $("gst").textContent="Iniciando motor CSP...";
+    $("gpb").style.width="2%";
+    await new Promise(r=>setTimeout(r,0));
+
+    try{
     for(let iter=0;iter<MAX_ITER;iter++){
       iterUsed=iter+1;
+      if(iter===0){
+        const ln=document.createElement("div");
+        ln.style.color="#80bde2";
+        ln.textContent=`🔄 Motor iniciado — ${tasks.length} tareas, ${primGroups.length} grupos`;
+        $("glog").appendChild(ln); $("glog").scrollTop=$("glog").scrollHeight;
+        await new Promise(r=>setTimeout(r,0));
+      }
+      iterUsed=iter+1;
+
+      // Reset
       primGroups.forEach(g=>{ sched[g.name]={}; DAYS_N.forEach(d=>{ sched[g.name][d]={}; }); });
       S.teachers.forEach(t=>{
         teacherBusy[t.id]={}; DAYS_N.forEach(d=>{ teacherBusy[t.id][d]={}; });
         (t.unavail||[]).forEach(u=>{ teacherBusy[t.id][u.d][u.s]=true; });
       });
+      // Restaurar infantil en teacherBusy
+      infGroups.forEach(g=>{
+        DAYS_N.forEach(day=>lectSlots.forEach(slot=>{
+          const cell=S.schedule[g.name]?.[day]?.[slot]||S.schedule[g.name]?.[String(day)]?.[String(slot)];
+          if(cell?.t) teacherBusy[cell.t][day][slot]=true;
+        }));
+      });
       tasks.forEach(t=>{ t._placed=false; });
       placed=0; skipped=0; conflicts=[];
 
-      if(iter>0){
-        tasks.sort((a,b)=>{
-          const pa=taskPriority(a),pb=taskPriority(b);
-          if(Math.abs(pa-pb)>2) return pa-pb;
-          const fa=DAYS_N.reduce((s,d)=>s+getFreeSlots(a.gname,a.tid,d,a.code).length,0)||1;
-          const fb=DAYS_N.reduce((s,d)=>s+getFreeSlots(b.gname,b.tid,d,b.code).length,0)||1;
-          return (b.sessions/fb+(Math.random()-0.5)*0.06)-(a.sessions/fa+(Math.random()-0.5)*0.06);
+      // ── OPCIÓN C: COLOCACIÓN GLOBAL DE ESPECIALISTAS CRÍTICOS ──────
+      // Oscar, Richi, Diego, Arancha tienen muchos grupos y pocas franjas.
+      // Resolver su asignación completa mediante backtracking ANTES del
+      // motor general garantiza que si existe solución, la encuentra.
+      // Para Arancha solo las sesiones CROSS-GROUP (LEX fuera de 1ºB),
+      // sus sesiones en su propio grupo 1ºB son más flexibles.
+      const criticalSpecialists=["Oscar","Richi","Diego","Arancha Inglés"];
+      const placedGlobal=new Set();
+
+      for(const specName of criticalSpecialists){
+        const spec=S.teachers.find(t=>t.name===specName);
+        if(!spec) continue;
+        const specId=spec.id;
+        const ownGroup=primGroups.find(g=>g.tutorId===specId);
+
+        // Recolectar sesiones. Para Arancha solo cross-group.
+        const specSessions=[];
+        const includedTasks=new Set();
+        tasks.forEach(task=>{
+          if(task.tid!==specId) return;
+          // Arancha: solo sesiones fuera de su grupo (cross-group)
+          if(specName==="Arancha Inglés"&&ownGroup&&task.gname===ownGroup.name) return;
+          for(let i=0;i<task.sessions;i++){
+            specSessions.push({gname:task.gname,code:task.code,task});
+          }
+          includedTasks.add(task);
         });
+        if(specSessions.length===0) continue;
+
+        // Backtracking: asignar cada sesión a una (día,slot) válida
+        // sin que dos sesiones del mismo especialista coincidan en franja
+        // ni dos sesiones del mismo grupo coincidan
+        const assignment=[]; // {gname,code,day,slot}
+        const usedSpecSlots=new Set(); // "day-slot" del especialista
+        const usedGroupSlots=new Set(); // "gname-day-slot"
+
+        function slotValid(gname,code,day,slot){
+          if(teacherBusy[specId][day][slot]) return false; // libranza u ocupado
+          if(usedSpecSlots.has(`${day}-${slot}`)) return false;
+          if(usedGroupSlots.has(`${gname}-${day}-${slot}`)) return false;
+          if(sched[gname][day]?.[slot]) return false; // ya ocupado (infantil/preplaced)
+          if(violatesSharedSpace(gname,code,day,slot)) return false;
+          // No más de 1 sesión del mismo grupo+materia por día
+          const sameDayCount=assignment.filter(a=>a.gname===gname&&a.code===code&&a.day===day).length;
+          if(sameDayCount>=1) return false;
+          return true;
+        }
+
+        // Ordenar sesiones por grupo más restringido primero (MRV real)
+        function countOptions(gname,code){
+          let n=0;
+          DAYS_N.forEach(day=>lectSlots.forEach(slot=>{
+            if(slotValid(gname,code,day,slot)) n++;
+          }));
+          return n;
+        }
+
+        let solved=false;
+        let btSteps=0;
+        const BT_MAX=50000;
+        function backtrack(idx){
+          if(++btSteps>BT_MAX) return false;
+          if(idx>=specSessions.length){ solved=true; return true; }
+          // Reordenar sesiones restantes por nº de opciones (MRV)
+          const remaining=specSessions.slice(idx);
+          remaining.sort((a,b)=>countOptions(a.gname,a.code)-countOptions(b.gname,b.code));
+          specSessions.splice(idx,remaining.length,...remaining);
+
+          const {gname,code}=specSessions[idx];
+          // Generar franjas válidas, barajadas para variedad entre reinicios
+          const opts=[];
+          DAYS_N.forEach(day=>lectSlots.forEach(slot=>{
+            if(slotValid(gname,code,day,slot)) opts.push({day,slot});
+          }));
+          opts.sort(()=>Math.random()-0.5);
+
+          for(const {day,slot} of opts){
+            assignment.push({gname,code,day,slot});
+            usedSpecSlots.add(`${day}-${slot}`);
+            usedGroupSlots.add(`${gname}-${day}-${slot}`);
+            if(backtrack(idx+1)) return true;
+            assignment.pop();
+            usedSpecSlots.delete(`${day}-${slot}`);
+            usedGroupSlots.delete(`${gname}-${day}-${slot}`);
+          }
+          return false;
+        }
+
+        backtrack(0);
+
+        // Aplicar la asignación encontrada
+        if(solved){
+          assignment.forEach(a=>{
+            sched[a.gname][a.day][a.slot]={s:a.code,t:specId};
+            teacherBusy[specId][a.day][a.slot]=true;
+            usedGroupSlots.add(`${a.gname}-${a.day}-${a.slot}`);
+          });
+          // Marcar SOLO las tasks incluidas en el backtracking como colocadas
+          includedTasks.forEach(task=>placedGlobal.add(task));
+        }
       }
 
+      // Marcar como colocadas las tareas resueltas globalmente
+      placedGlobal.forEach(task=>{ task._placed=true; placed+=task.sessions; });
+
+      // Ordenar tareas con MRV + aleatoriedad creciente
+      tasks.sort((a,b)=>{
+        const pa=taskPriority(a),pb=taskPriority(b);
+        const blockA=Math.floor(pa),blockB=Math.floor(pb);
+        if(blockA!==blockB) return blockA-blockB;
+        const noise=Math.min(1.5,iter*0.005);
+        const pressA=taskPressure(a),pressB=taskPressure(b);
+        return (pressB-pressA)+(Math.random()-0.5)*noise;
+      });
+
       for(const task of tasks){
+        if(task._placed) continue; // ya colocada globalmente
         if(placeTask(task)) placed+=task.sessions;
         else skipped+=task.sessions;
       }
@@ -2783,23 +3241,18 @@ function runGenEngine(){
       }
       if(skipped===0) break;
 
-      // ── FASE DE REPARACIÓN DIRIGIDA ──────────────────────────────
-      // Cuando quedan < 10 sesiones sin colocar, intentar swaps sobre
-      // el mejor horario en lugar de reiniciar desde cero
-      if(skipped>0&&skipped<10&&bestSched){
-        const repairResult=attemptSwapRepair(bestSched,bestConflicts);
-        if(repairResult.skipped<bestSkipped){
-          bestSkipped=repairResult.skipped;
-          bestPlaced=repairResult.placed;
-          bestSched=repairResult.sched;
-          bestConflicts=repairResult.conflicts;
-          $("gst").textContent=`${iterUsed} intentos · 🔧 swap: ${bestSkipped} sin colocar`;
+      // Swap repair cuando quedan pocas sesiones
+      if(skipped<10&&bestSched){
+        const r=attemptSwapRepair(bestSched,bestConflicts);
+        if(r.skipped<bestSkipped){
+          bestSkipped=r.skipped; bestPlaced=r.placed;
+          bestConflicts=r.conflicts; bestSched=r.sched;
+          $("gst").textContent=`🔧 ${iterUsed} it · swap: ${bestSkipped} sin colocar`;
           if(bestSkipped===0) break;
         }
       }
 
-      // Yield cada 10 iteraciones para no congelar el navegador
-      if(iter%10===9){
+      if(iter%5===4||iter<3){
         $("gst").textContent=`${iterUsed} intentos · mejor: ${bestSkipped} sin colocar`;
         $("gpb").style.width=Math.round(iterUsed/MAX_ITER*100)+"%";
         await new Promise(r=>setTimeout(r,0));
@@ -2809,45 +3262,251 @@ function runGenEngine(){
     primGroups.forEach(g=>{ if(bestSched) sched[g.name]=bestSched[g.name]; });
     placed=bestPlaced; skipped=bestSkipped; conflicts=bestConflicts;
     finalizarGen();
+    }catch(err){
+      const errLn=document.createElement("div");
+      errLn.style.color="#f87171";
+      errLn.textContent=`❌ Error en motor: ${err.message} — ${err.stack?.split('\n')[0]}`;
+      $("glog").appendChild(errLn); $("glog").scrollTop=$("glog").scrollHeight;
+      $("gst").textContent="Error — ver log";
+      const btn=$("gbtn"); if(btn){btn.disabled=false;btn.textContent="⚡ Reintentar";}
+    }
   }
 
-  // ── REPARACIÓN POR SWAP SOBRE EL MEJOR HORARIO ───────────────────
-  // Recibe el mejor horario y la lista de conflictos, devuelve
-  // un horario mejorado intentando resolver los conflictos con swaps
+  function finalizarGen(){
+    const hardViolations=[];
+    DAYS_N.forEach(day=>{ lectSlots.forEach(slot=>{
+      const byT={};
+      primGroups.forEach(g=>{
+        const cell=sched[g.name][day]?.[slot];
+        if(cell?.t){
+          if(byT[cell.t]) hardViolations.push(`⬛ ${gt(cell.t)?.name} en ${g.name} Y ${byT[cell.t]}`);
+          else byT[cell.t]=g.name;
+        }
+      });
+    }); });
+
+    // Guardar primaria
+    primGroups.forEach(g=>{ S.schedule[g.name]=sched[g.name]; });
+
+    // ── FASE ELBA: desdoble Religión↔PC en primaria ──────────────
+    // Elba debe ir en la MISMA franja que el profesor de PC de cada grupo.
+    // Recorre los 12 grupos de primaria y añade Elba (t2) en la celda REL.
+    if(elbaId){
+      // Reconstruir ocupación de Elba desde infantil (fase 1)
+      const elbaBusy={}; DAYS_N.forEach(d=>{ elbaBusy[d]={}; });
+      (S.teachers.find(t=>t.id===elbaId)?.unavail||[]).forEach(u=>{ elbaBusy[u.d][u.s]=true; });
+      // Marcar franjas de Elba ya usadas en infantil
+      infGroups.forEach(g=>{
+        DAYS_N.forEach(day=>lectSlots.forEach(slot=>{
+          const cell=S.schedule[g.name]?.[day]?.[slot]||S.schedule[g.name]?.[String(day)]?.[String(slot)];
+          if(cell&&(cell.t===elbaId||cell.t2===elbaId)) elbaBusy[day][slot]=true;
+        }));
+      });
+      let elbaPlaced=0, elbaFailed=[];
+      primGroups.forEach(g=>{
+        // Buscar la celda REL del PC en este grupo
+        let relCell=null,relDay=null,relSlot=null;
+        DAYS_N.forEach(day=>lectSlots.forEach(slot=>{
+          const cell=S.schedule[g.name]?.[day]?.[slot];
+          if(cell?.s==="REL"&&cell.t!==elbaId&&!cell.t2){ relCell=cell; relDay=day; relSlot=slot; }
+        }));
+        if(relCell){
+          if(!elbaBusy[relDay][relSlot]){
+            relCell.t2=elbaId; relCell.parallel=true;
+            elbaBusy[relDay][relSlot]=true;
+            elbaPlaced++;
+          } else {
+            elbaFailed.push(`${g.name} (Elba ocupada ${DAYS[relDay-1]}${slot_labels[relSlot]})`);
+          }
+        } else {
+          elbaFailed.push(`${g.name} (sin celda REL/PC)`);
+        }
+      });
+      const el=document.createElement("div");
+      el.style.color=elbaPlaced===primGroups.length?"#4ade80":"#fbbf24";
+      el.textContent=`⛪ Elba desdoble: ${elbaPlaced}/${primGroups.length} grupos`+(elbaFailed.length?` — falló: ${elbaFailed.join(", ")}`:"");
+      $("glog").appendChild(el); $("glog").scrollTop=$("glog").scrollHeight;
+    }
+
+    // ── FASE 3+4: Completar infantil ─────────────────────────────
+    if(infGroups.length>0){
+      // Añadir log visible
+      const infStart=document.createElement("div");
+      infStart.style.color="#80bde2";
+      infStart.textContent=`🧒 Completando infantil (${infGroups.length} grupos)...`;
+      $("glog").appendChild(infStart); $("glog").scrollTop=$("glog").scrollHeight;
+
+      // Reconstruir teacherBusy con primaria + infantil fase 1
+      S.teachers.forEach(t=>{
+        teacherBusy[t.id]={}; DAYS_N.forEach(d=>{ teacherBusy[t.id][d]={}; });
+        (t.unavail||[]).forEach(u=>{ teacherBusy[t.id][u.d][u.s]=true; });
+      });
+      [...primGroups,...infGroups].forEach(g=>{
+        DAYS_N.forEach(day=>lectSlots.forEach(slot=>{
+          const cell=S.schedule[g.name]?.[day]?.[slot]||S.schedule[g.name]?.[String(day)]?.[String(slot)];
+          if(cell?.t) teacherBusy[cell.t][day][slot]=true;
+        }));
+      });
+
+      // Restaurar sched de infantil desde S.schedule (fase 1)
+      infGroups.forEach(g=>{
+        sched[g.name]={};
+        DAYS_N.forEach(d=>{
+          sched[g.name][d]={};
+          lectSlots.forEach(slot=>{
+            const cell=S.schedule[g.name]?.[d]?.[slot]||S.schedule[g.name]?.[String(d)]?.[String(slot)];
+            if(cell) sched[g.name][d][slot]=cell;
+          });
+        });
+      });
+
+      // Fase 3: especialistas restantes
+      infGroups.forEach(g=>{
+        (S.curriculum[g.id]||[]).forEach(e=>{
+          if(!e.sessions||e.tid===g.tutorId) return;
+          const code=S.subjects.find(s=>s.id===e.sid)?.code||"???";
+          let placed2=0;
+          DAYS_N.forEach(d=>lectSlots.forEach(sl=>{ if(sched[g.name][d]?.[sl]?.t===e.tid) placed2++; }));
+          let remaining=e.sessions-placed2;
+          if(remaining<=0) return;
+          const dc={}; DAYS_N.forEach(d=>dc[d]=0);
+          for(let mp=1;mp<=5&&remaining>0;mp++){
+            for(const day of [...DAYS_N].sort(()=>Math.random()-0.5)){
+              if(remaining<=0||dc[day]>=mp) continue;
+              const free=lectSlots.filter(sl=>!sched[g.name][day]?.[sl]&&(!e.tid||!teacherBusy[e.tid]?.[day]?.[sl]));
+              if(!free.length) continue;
+              const slot=free[Math.floor(Math.random()*free.length)];
+              sched[g.name][day][slot]={s:code,t:e.tid};
+              if(e.tid) teacherBusy[e.tid][day][slot]=true;
+              dc[day]++; remaining--;
+            }
+          }
+        });
+      });
+      // Fase 4: GLOB tutoras
+      infGroups.forEach(g=>{
+        const te=(S.curriculum[g.id]||[]).find(e=>e.tid===g.tutorId);
+        if(!te) return;
+        const code=S.subjects.find(s=>s.id===te.sid)?.code||"GLOB";
+        DAYS_N.forEach(day=>lectSlots.forEach(slot=>{
+          if(sched[g.name][day]?.[slot]) return;
+          if(teacherBusy[g.tutorId]?.[day]?.[slot]) return;
+          sched[g.name][day][slot]={s:code,t:g.tutorId};
+          if(g.tutorId) teacherBusy[g.tutorId][day][slot]=true;
+        }));
+      });
+      infGroups.forEach(g=>{ S.schedule[g.name]=sched[g.name]; });
+
+      // ── RESOLVER CONFLICTOS DUROS infantil↔primaria ──────────────
+      let conflictsFixed=0;
+      DAYS_N.forEach(day=>lectSlots.forEach(slot=>{
+        const byT={};
+        [...primGroups,...infGroups].forEach(g=>{
+          const cell=S.schedule[g.name]?.[day]?.[slot];
+          if(cell?.t){
+            if(!byT[cell.t]) byT[cell.t]=[];
+            byT[cell.t].push(g);
+          }
+        });
+        Object.entries(byT).forEach(([tid,gs])=>{
+          if(gs.length<2) return;
+          const infG=gs.find(g=>g.level==="infantil");
+          const primG=gs.find(g=>g.level==="primaria");
+          if(!infG||!primG) return;
+          const cell=S.schedule[infG.name][day][slot];
+          let moved=false;
+          for(const ad of DAYS_N){
+            if(moved) break;
+            for(const as of lectSlots){
+              if(ad===day&&as===slot) continue;
+              if(S.schedule[infG.name][ad]?.[as]) continue;
+              let busy=false;
+              [...primGroups,...infGroups].forEach(g=>{
+                if(S.schedule[g.name]?.[ad]?.[as]?.t===tid) busy=true;
+              });
+              if(busy) continue;
+              if((S.teachers.find(t=>t.id===tid)?.unavail||[]).some(u=>u.d===ad&&u.s===as)) continue;
+              S.schedule[infG.name][ad][as]=cell;
+              delete S.schedule[infG.name][day][slot];
+              conflictsFixed++; moved=true;
+            }
+          }
+          if(!moved){
+            delete S.schedule[infG.name][day][slot];
+            conflictsFixed++;
+          }
+        });
+      }));
+      if(conflictsFixed>0){
+        const cf=document.createElement("div");
+        cf.style.color="#fbbf24";
+        cf.textContent=`🔧 ${conflictsFixed} conflictos infantil↔primaria resueltos`;
+        $("glog").appendChild(cf); $("glog").scrollTop=$("glog").scrollHeight;
+      }
+
+      let it=0,ip=0;
+      infGroups.forEach(g=>{
+        (S.curriculum[g.id]||[]).forEach(e=>{ it+=e.sessions; });
+        DAYS_N.forEach(d=>lectSlots.forEach(sl=>{ if(sched[g.name][d]?.[sl]) ip++; }));
+      });
+      const il=document.createElement("div");
+      il.style.color=ip>=it?"#4ade80":"#fbbf24";
+      il.textContent=ip>=it?`✅ Infantil completo — ${ip} ses.`:`⚠ Infantil: ${ip}/${it}`;
+      $("glog").appendChild(il); $("glog").scrollTop=$("glog").scrollHeight;
+    }
+
+    const elapsed=Date.now()-t0;
+    const score=Math.max(30,Math.round(100-skipped*8-hardViolations.length*15));
+    const logLines=[
+      [`🚀 Motor CSP — ${S.center.name}`,"#80bde2"],
+      [`📊 ${primGroups.length} grupos · ${tasks.length} tareas`,"#80bde2"],
+      [`🔄 ${iterUsed} intentos`,"#bfddf0"],
+      [`✅ ${placed} sesiones colocadas`,"#4ade80"],
+      conflicts.length>0?[`❌ ${skipped} sin colocar: ${conflicts.map(c=>`${c.task?.gname}|${c.task?.code}`).join(" · ")}`,"#f87171"]:[`🎉 HORARIO COMPLETO`,"#4ade80"],
+      hardViolations.length>0?[`⬛ ${hardViolations.length} conflictos duros`,"#f87171"]:[`✅ Sin conflictos duros`,"#4ade80"],
+      [`📈 ${score}/100 · ⏱️ ${elapsed}ms`,"#80bde2"],
+    ].filter(Boolean);
+
+    let i=0;
+    const tick=setInterval(()=>{
+      if(i>=logLines.length){ clearInterval(tick); finishGen(score,hardViolations.length,skipped); return; }
+      const[text,color]=logLines[i];
+      const ln=document.createElement("div"); ln.style.color=color; ln.textContent=text;
+      $("glog").appendChild(ln); $("glog").scrollTop=$("glog").scrollHeight;
+      $("gpb").style.width=Math.round(((i+1)/logLines.length)*100)+"%";
+      $("gst").textContent=Math.round(((i+1)/logLines.length)*100)+"%";
+      i++;
+    },50);
+  } // fin finalizarGen
+
+  // ── ATTEMPT SWAP REPAIR con logs ─────────────────────────────────
   function attemptSwapRepair(sourceSched, sourceConflicts){
-    // Copiar el horario fuente para trabajar sobre él
     const ws={};
     primGroups.forEach(g=>{
-      ws[g.name]={};
-      DAYS_N.forEach(d=>{ ws[g.name][d]={...(sourceSched[g.name][d]||{})}; });
+      ws[g.name]={}; DAYS_N.forEach(d=>{ ws[g.name][d]={...(sourceSched[g.name][d]||{})}; });
     });
-
-    // Reconstruir teacherBusy desde el horario copiado
     const wb={};
     S.teachers.forEach(t=>{
       wb[t.id]={}; DAYS_N.forEach(d=>{ wb[t.id][d]={}; });
       (t.unavail||[]).forEach(u=>{ wb[t.id][u.d][u.s]=true; });
     });
-    primGroups.forEach(g=>{
-      DAYS_N.forEach(day=>{
-        lectSlots.forEach(slot=>{
-          const cell=ws[g.name][day]?.[slot];
-          if(cell?.t) wb[cell.t][day][slot]=true;
-        });
-      });
-    });
+    primGroups.forEach(g=>DAYS_N.forEach(day=>lectSlots.forEach(slot=>{
+      const cell=ws[g.name][day]?.[slot]; if(cell?.t) wb[cell.t][day][slot]=true;
+    })));
 
     let totalRepaired=0;
     const remainingConflicts=[];
+    const swapLog=[];
 
-    for(const conf of sourceConflicts){
-      const task=conf.task;
-      let remaining=conf.remaining;
+    const shuffled=[...sourceConflicts].sort(()=>Math.random()-0.5);
+    for(const conf of shuffled){
+      const task=conf.task; let remaining=conf.remaining;
       if(!task.tid){ remainingConflicts.push(conf); continue; }
+      const tname=S.teachers.find(t=>t.id===task.tid)?.name||task.tid;
 
-      // PASO 1: intentar colocar directamente en huecos libres
-      for(const day of DAYS_N){
-        for(const slot of lectSlots){
+      // PASO 1: colocar directo
+      for(const day of [...DAYS_N].sort(()=>Math.random()-0.5)){
+        for(const slot of [...lectSlots].sort(()=>Math.random()-0.5)){
           if(remaining<=0) break;
           if(ws[task.gname][day][slot]) continue;
           if(wb[task.tid][day][slot]) continue;
@@ -2855,162 +3514,408 @@ function runGenEngine(){
           ws[task.gname][day][slot]={s:task.code,t:task.tid};
           wb[task.tid][day][slot]=true;
           remaining--; totalRepaired++;
+          swapLog.push(`✅ P1 directo: ${task.gname}/${task.code} → ${DAYS[day-1]} ${day===1?'Lun':day===2?'Mar':day===3?'Mié':day===4?'Jue':'Vie'}`);
         }
         if(remaining<=0) break;
       }
       if(remaining<=0) continue;
 
-      // PASO 2: swap — mover sesión existente para liberar hueco
-      for(const day of DAYS_N){
+      // PASO 2: swap mismo grupo
+      for(const day of [...DAYS_N].sort(()=>Math.random()-0.5)){
+        if(remaining<=0) break;
         for(const slot of lectSlots){
           if(remaining<=0) break;
-          if(wb[task.tid][day][slot]) continue; // profesor ocupado aquí
+          if(wb[task.tid][day][slot]) continue;
           const cell=ws[task.gname][day][slot];
-          if(!cell||cell.t===task.tid) continue; // vacío o misma persona
-          const eTid=cell.t, eCode=cell.s;
-          // Buscar hueco alternativo para mover cell
-          let moved=false;
+          if(!cell||cell.t===task.tid) continue;
+          const eTid=cell.t,eCode=cell.s;
           for(const ad of DAYS_N){
             for(const as of lectSlots){
               if(ad===day&&as===slot) continue;
               if(ws[task.gname][ad][as]) continue;
               if(eTid&&wb[eTid][ad][as]) continue;
               if(violatesSharedSpace(task.gname,eCode,ad,as)) continue;
-              // Mover cell a ad/as y colocar task en day/slot
               ws[task.gname][ad][as]=cell;
-              if(eTid){ wb[eTid][ad][as]=true; delete wb[eTid][day][slot]; }
+              if(eTid){wb[eTid][ad][as]=true;delete wb[eTid][day][slot];}
               delete ws[task.gname][day][slot];
               ws[task.gname][day][slot]={s:task.code,t:task.tid};
               wb[task.tid][day][slot]=true;
-              remaining--; totalRepaired++; moved=true; break;
+              remaining--;totalRepaired++;
+              swapLog.push(`✅ P2 mismo grupo: ${task.gname}/${task.code} moviendo ${eCode}`);
+              break;
             }
-            if(moved) break;
+            if(remaining<conf.remaining) break;
           }
         }
-        if(remaining<=0) break;
       }
+      if(remaining<=0) continue;
 
-      // PASO 3: swap cruzado — el profesor está ocupado en OTRO grupo
-      // en las franjas libres de este grupo. Mover esa sesión del otro
-      // grupo a otra franja para liberar al profesor aquí.
-      if(remaining>0&&task.tid){
-        for(const day of DAYS_N){
-          for(const slot of lectSlots){
+      // PASO 3: swap cruzado
+      for(const day of [...DAYS_N].sort(()=>Math.random()-0.5)){
+        if(remaining<=0) break;
+        for(const slot of lectSlots){
+          if(remaining<=0) break;
+          if(ws[task.gname][day][slot]) continue;
+          if(!wb[task.tid][day][slot]) continue;
+          if(violatesSharedSpace(task.gname,task.code,day,slot)) continue;
+          for(const og of primGroups){
+            if(og.name===task.gname) continue;
+            const oc=ws[og.name][day]?.[slot];
+            if(!oc||oc.t!==task.tid) continue;
+            for(const ad of DAYS_N){
+              for(const as of lectSlots){
+                if(ad===day&&as===slot) continue;
+                if(ws[og.name][ad]?.[as]) continue;
+                if(wb[task.tid][ad][as]) continue;
+                if(violatesSharedSpace(og.name,oc.s,ad,as)) continue;
+                if(oc.s==="REL"&&og.tutorId&&ws[og.name][ad]?.[as]?.t===og.tutorId) continue;
+                ws[og.name][ad][as]=oc;
+                wb[task.tid][ad][as]=true;
+                delete ws[og.name][day][slot];
+                delete wb[task.tid][day][slot];
+                ws[task.gname][day][slot]={s:task.code,t:task.tid};
+                wb[task.tid][day][slot]=true;
+                remaining--;totalRepaired++;
+                swapLog.push(`✅ P3 cruzado: ${task.gname}/${task.code} liberando ${og.name}/${oc.s}`);
+                break;
+              }
+              if(remaining<conf.remaining) break;
+            }
             if(remaining<=0) break;
-            if(ws[task.gname][day][slot]) continue; // grupo ocupado aquí
-            if(!wb[task.tid][day][slot]) continue;  // profesor libre aquí — ya intentado en PASO 1
-            // El profesor está ocupado en otro grupo en esta franja
-            // Buscar en qué grupo y mover esa sesión
-            for(const otherGroup of primGroups){
-              if(otherGroup.name===task.gname) continue;
-              const otherCell=ws[otherGroup.name][day]?.[slot];
-              if(!otherCell||otherCell.t!==task.tid) continue;
-              const oCode=otherCell.s;
-              // Buscar hueco alternativo en el otro grupo para mover otherCell
-              let crossMoved=false;
-              for(const ad of DAYS_N){
-                for(const as of lectSlots){
-                  if(ad===day&&as===slot) continue;
-                  if(ws[otherGroup.name][ad]?.[as]) continue;
-                  if(wb[task.tid][ad][as]) continue; // profesor también ocupado allí
-                  if(violatesSharedSpace(otherGroup.name,oCode,ad,as)) continue;
-                  // VERIFICACIÓN CRÍTICA para desdobles REL/PC:
-                  // el tutor anfitrión no puede estar en su propio grupo en la nueva franja
-                  if(oCode==="REL"&&otherGroup.tutorId){
-                    if(ws[otherGroup.name][ad]?.[as]?.t===otherGroup.tutorId) continue;
-                  }
-                  // Mover la sesión del otro grupo a ad/as
-                  ws[otherGroup.name][ad][as]=otherCell;
-                  wb[task.tid][ad][as]=true;
-                  delete ws[otherGroup.name][day][slot];
-                  delete wb[task.tid][day][slot];
-                  // Ahora colocar la sesión fallida en day/slot
-                  if(!violatesSharedSpace(task.gname,task.code,day,slot)){
-                    ws[task.gname][day][slot]={s:task.code,t:task.tid};
-                    wb[task.tid][day][slot]=true;
-                    remaining--; totalRepaired++; crossMoved=true;
-                  } else {
-                    // Revertir
-                    ws[otherGroup.name][day][slot]=otherCell;
-                    wb[task.tid][day][slot]=true;
-                    delete ws[otherGroup.name][ad][as];
-                    delete wb[task.tid][ad][as];
-                  }
+          }
+        }
+      }
+      if(remaining<=0) continue;
+
+      // PASO 4: swap 2 niveles (grupo bloqueante lleno → mover a tercero)
+      for(const day of DAYS_N){
+        if(remaining<=0) break;
+        for(const slot of lectSlots){
+          if(remaining<=0) break;
+          if(ws[task.gname][day][slot]) continue;
+          if(!wb[task.tid][day][slot]) continue;
+          let blockerG=null,blockerCell=null;
+          for(const og of primGroups){
+            if(og.name===task.gname) continue;
+            const c=ws[og.name][day]?.[slot];
+            if(c&&c.t===task.tid){blockerG=og;blockerCell=c;break;}
+          }
+          if(!blockerG) continue;
+          for(const tg of primGroups){
+            if(tg.name===task.gname||tg.name===blockerG.name) continue;
+            for(const ad of DAYS_N){
+              for(const as of lectSlots){
+                if(ad===day&&as===slot) continue;
+                if(ws[tg.name][ad]?.[as]) continue;
+                if(wb[task.tid][ad][as]) continue;
+                if(violatesSharedSpace(tg.name,blockerCell.s,ad,as)) continue;
+                ws[tg.name][ad][as]=blockerCell;
+                wb[task.tid][ad][as]=true;
+                delete ws[blockerG.name][day][slot];
+                delete wb[task.tid][day][slot];
+                if(!violatesSharedSpace(task.gname,task.code,day,slot)){
+                  ws[task.gname][day][slot]={s:task.code,t:task.tid};
+                  wb[task.tid][day][slot]=true;
+                  remaining--;totalRepaired++;
+                  swapLog.push(`✅ P4 2niveles: ${task.gname}/${task.code} via ${tg.name}`);
                   break;
                 }
-                if(crossMoved) break;
+                ws[blockerG.name][day][slot]=blockerCell;
+                wb[task.tid][day][slot]=true;
+                delete ws[tg.name][ad][as];
+                delete wb[task.tid][ad][as];
               }
-              if(crossMoved) break;
+              if(remaining<conf.remaining) break;
+            }
+            if(remaining<=0) break;
+          }
+        }
+      }
+      if(remaining<=0) continue;
+
+      // PASO 5: desplazar otro profesor en el grupo bloqueante
+      for(const day of DAYS_N){
+        if(remaining<=0) break;
+        for(const slot of lectSlots){
+          if(remaining<=0) break;
+          if(ws[task.gname][day][slot]) continue;
+          if(!wb[task.tid][day][slot]) continue;
+          let blockerG=null,blockerCell=null;
+          for(const og of primGroups){
+            if(og.name===task.gname) continue;
+            const c=ws[og.name][day]?.[slot];
+            if(c&&c.t===task.tid){blockerG=og;blockerCell=c;break;}
+          }
+          if(!blockerG) continue;
+          for(const bgDay of DAYS_N){
+            if(remaining<=0) break;
+            for(const bgSlot of lectSlots){
+              if(bgDay===day&&bgSlot===slot) continue;
+              const bgCell=ws[blockerG.name][bgDay]?.[bgSlot];
+              if(!bgCell||bgCell.t===task.tid) continue;
+              const bgTid=bgCell.t,bgCode=bgCell.s;
+              for(const ad of DAYS_N){
+                for(const as of lectSlots){
+                  if(ad===bgDay&&as===bgSlot) continue;
+                  if(ad===day&&as===slot) continue;
+                  if(ws[blockerG.name][ad]?.[as]) continue;
+                  if(bgTid&&wb[bgTid][ad][as]) continue;
+                  if(violatesSharedSpace(blockerG.name,bgCode,ad,as)) continue;
+                  ws[blockerG.name][ad][as]=bgCell;
+                  if(bgTid){wb[bgTid][ad][as]=true;delete wb[bgTid][bgDay][bgSlot];}
+                  delete ws[blockerG.name][bgDay][bgSlot];
+                  if(!wb[task.tid][bgDay][bgSlot]){
+                    ws[blockerG.name][bgDay][bgSlot]=blockerCell;
+                    wb[task.tid][bgDay][bgSlot]=true;
+                    delete ws[blockerG.name][day][slot];
+                    delete wb[task.tid][day][slot];
+                    ws[task.gname][day][slot]={s:task.code,t:task.tid};
+                    wb[task.tid][day][slot]=true;
+                    remaining--;totalRepaired++;
+                    swapLog.push(`✅ P5 desplazar: ${task.gname}/${task.code} moviendo ${bgCode} en ${blockerG.name}`);
+                    break;
+                  }
+                  ws[blockerG.name][bgDay][bgSlot]=bgCell;
+                  if(bgTid){wb[bgTid][bgDay][bgSlot]=true;delete wb[bgTid][ad][as];}
+                  delete ws[blockerG.name][ad][as];
+                }
+                if(remaining<conf.remaining) break;
+              }
+              if(remaining<=0) break;
             }
           }
-          if(remaining<=0) break;
+        }
+      }
+      if(remaining<=0) continue;
+
+      // PASO 6: mover sesión al hueco de libranza para liberar franja
+      if(remaining>0&&task.tid){
+        const tUnavail=S.teachers.find(t=>t.id===task.tid)?.unavail||[];
+        const grupoHuecos=[];
+        DAYS_N.forEach(day=>lectSlots.forEach(slot=>{
+          if(!ws[task.gname][day]?.[slot]) grupoHuecos.push({day,slot});
+        }));
+        const libranzaHuecos=grupoHuecos.filter(({day,slot})=>
+          tUnavail.some(u=>u.d===day&&u.s===slot));
+        if(libranzaHuecos.length>0&&grupoHuecos.length===libranzaHuecos.length){
+          for(const {day:lDay,slot:lSlot} of libranzaHuecos){
+            if(remaining<=0) break;
+            for(const srcDay of DAYS_N){
+              if(remaining<=0) break;
+              for(const srcSlot of lectSlots){
+                if(srcDay===lDay&&srcSlot===lSlot) continue;
+                const srcCell=ws[task.gname][srcDay]?.[srcSlot];
+                if(!srcCell) continue;
+                const srcTid=srcCell.t,srcCode=srcCell.s;
+                if(srcTid&&wb[srcTid][lDay][lSlot]) continue;
+                if(violatesSharedSpace(task.gname,srcCode,lDay,lSlot)) continue;
+                if(wb[task.tid][srcDay][srcSlot]) continue;
+                if(tUnavail.some(u=>u.d===srcDay&&u.s===srcSlot)) continue;
+                ws[task.gname][lDay][lSlot]=srcCell;
+                if(srcTid){wb[srcTid][lDay][lSlot]=true;delete wb[srcTid][srcDay][srcSlot];}
+                delete ws[task.gname][srcDay][srcSlot];
+                ws[task.gname][srcDay][srcSlot]={s:task.code,t:task.tid};
+                wb[task.tid][srcDay][srcSlot]=true;
+                remaining--;totalRepaired++;
+                swapLog.push(`✅ P6 libranza: ${task.gname}/${task.code} moviendo ${srcCode} al hueco de libranza`);
+                break;
+              }
+            }
+          }
         }
       }
 
-      if(remaining>0) remainingConflicts.push({...conf,remaining});
+      if(remaining>0){
+        swapLog.push(`❌ FALLO: ${task.gname}/${task.code}/${tname} — ${remaining} sin colocar tras P1-P6`);
+        remainingConflicts.push({...conf,remaining});
+      }
     }
 
-    // Contar sesiones totales colocadas
-    let newPlaced=0;
-    primGroups.forEach(g=>{
-      DAYS_N.forEach(d=>{
-        lectSlots.forEach(s=>{ if(ws[g.name][d]?.[s]) newPlaced++; });
-      });
-    });
-    const newSkipped=remainingConflicts.reduce((s,c)=>s+c.remaining,0);
+    // ── PASO 7: reubicar sesión ya colocada del mismo especialista ───
+    // EF(Oscar) está en 2ºB Jue5ª. 3ºB necesita EF y su único hueco es Jue5ª.
+    // Solución: mover la EF ya colocada de 2ºB a otra franja libre de 2ºB
+    // → Jue5ª queda libre en 2ºB → Oscar puede dar EF en 3ºB Jue5ª
+    for(const conf of [...remainingConflicts]){
+      if(conf.remaining<=0) continue;
+      const task=conf.task; if(!task.tid) continue;
+      let fixed=false;
+      const tUnavail7=S.teachers.find(t=>t.id===task.tid)?.unavail||[];
 
-    return {sched:ws, placed:newPlaced, skipped:newSkipped, conflicts:remainingConflicts};
-  }
+      // Para cada hueco libre en el grupo destino donde el profesor está ocupado
+      for(const day of DAYS_N){
+        if(fixed) break;
+        for(const slot of lectSlots){
+          if(fixed) break;
+          if(ws[task.gname][day]?.[slot]) continue; // no es hueco libre
+          if(!wb[task.tid][day][slot]) continue; // profesor libre aquí → ya manejado antes
 
-  function finalizarGen(){
-  const hardViolations=[];
-  DAYS_N.forEach(day=>{
-    lectSlots.forEach(slot=>{
-      const byT={};
-      primGroups.forEach(g=>{
-        const cell=sched[g.name][day]?.[slot];
-        if(cell?.t){
-          if(byT[cell.t]) hardViolations.push(`⬛ ${gt(cell.t)?.name} en ${g.name} Y ${byT[cell.t]} (${DAYS[day-1]} fr.${slot})`);
-          else byT[cell.t]=g.name;
+          // El profesor está en otro grupo ogName en day/slot
+          let ogName=null;
+          for(const og of primGroups){
+            if(og.name===task.gname) continue;
+            if(ws[og.name][day]?.[slot]?.t===task.tid){ ogName=og.name; break; }
+          }
+          if(!ogName) continue;
+
+          // Buscar franja alternativa en ogName donde el profesor pueda ir
+          // y el grupo tenga hueco libre
+          for(const ad of DAYS_N){
+            if(fixed) break;
+            for(const as of lectSlots){
+              if(ad===day&&as===slot) continue;
+              if(ws[ogName][ad]?.[as]) continue; // ogName ocupado ahí
+              if(wb[task.tid][ad][as]) continue; // profesor ocupado ahí
+              if(tUnavail7.some(u=>u.d===ad&&u.s===as)) continue;
+              if(violatesSharedSpace(ogName,task.code,ad,as)) continue;
+              // Mover la sesión del especialista de day/slot a ad/as en ogName
+              const movedCell=ws[ogName][day][slot];
+              ws[ogName][ad][as]=movedCell;
+              wb[task.tid][ad][as]=true;
+              delete ws[ogName][day][slot];
+              delete wb[task.tid][day][slot];
+              // Ahora colocar la tarea fallida en day/slot
+              ws[task.gname][day][slot]={s:task.code,t:task.tid};
+              wb[task.tid][day][slot]=true;
+              conf.remaining--;
+              const idx7=remainingConflicts.indexOf(conf);
+              if(conf.remaining<=0&&idx7>-1) remainingConflicts.splice(idx7,1);
+              fixed=true;
+              swapLog.push(`✅ P7 reubicar: ${ogName}/${task.code} ${DAYS[day-1]}${slot_labels[slot]}→${DAYS[ad-1]}${slot_labels[as]}, colocando ${task.gname}/${task.code}`);
+            }
+          }
         }
+      }
+    }
+
+    // Mostrar logs de swap en el generador
+    if(swapLog.length>0){
+      swapLog.forEach(msg=>{
+        const ln=document.createElement("div");
+        ln.style.cssText=`font-size:10px;color:${msg.startsWith('✅')?'#4ade80':'#f87171'}`;
+        ln.textContent=msg;
+        const glog=$("glog"); if(glog){glog.appendChild(ln);}
       });
-    });
-  });
+      const glog=$("glog"); if(glog) glog.scrollTop=glog.scrollHeight;
+    }
 
-  S.schedule={};
-  primGroups.forEach(g=>{ S.schedule[g.name]=sched[g.name]; });
-
-  const elapsed=Date.now()-t0;
-  const score=Math.max(30,Math.round(100-skipped*8-hardViolations.length*15));
-
-  const logLines=[
-    [`🚀 Motor CSP — ${S.center.name}`,"#80bde2"],
-    [`📊 ${primGroups.length} grupos · ${tasks.length} tareas · ${placed+skipped} ses.`,"#80bde2"],
-    [`📐 ${lectSlots.length} franjas × 5 días = ${lectSlots.length*5} huecos/semana`,"#80bde2"],
-    diagWarnings.length>0?[`🔍 ${diagWarnings.join(" | ")}`,"#fbbf24"]:[`✅ Diagnóstico OK`,"#4ade80"],
-    [`⚙️  Orden: cross×2 → ×2tutor → especialistas → ×1tutor → tutores → Teresa`,"#bfddf0"],
-    [`🔄 ${iterUsed} intento${iterUsed>1?"s":""} realizados`,"#bfddf0"],
-    [`✅ ${placed} sesiones colocadas`,"#4ade80"],
-    conflicts.length>0?[`❌ ${skipped} sin colocar: ${conflicts.map(c=>`${c.task.gname}|${c.task.code}|${c.reason}`).join(" · ")}`,"#f87171"]:[`🎉 HORARIO COMPLETO SIN ERRORES`,"#4ade80"],
-    hardViolations.length>0?[`⬛ ${hardViolations.length} conflictos duros`,"#f87171"]:[`✅ Sin conflictos duros`,"#4ade80"],
-    [`📈 ${score}/100 · ⏱️ ${elapsed}ms · 🔄 ${iterUsed} intentos`,"#80bde2"],
-  ].filter(Boolean);
-
-  let i=0;
-  const tick=setInterval(()=>{
-    if(i>=logLines.length){ clearInterval(tick); finishGen(score,hardViolations.length,skipped); return; }
-    const[text,color]=logLines[i];
-    const ln=document.createElement("div");
-    ln.style.color=color; ln.textContent=text;
-    $("glog").appendChild(ln); $("glog").scrollTop=$("glog").scrollHeight;
-    $("gpb").style.width=Math.round(((i+1)/logLines.length)*100)+"%";
-    $("gst").textContent=Math.round(((i+1)/logLines.length)*100)+"%";
-    i++;
-  },50);
-  } // fin finalizarGen
+    let newPlaced=0;
+    primGroups.forEach(g=>DAYS_N.forEach(d=>lectSlots.forEach(s=>{ if(ws[g.name][d]?.[s]) newPlaced++; })));
+    const newSkipped=remainingConflicts.reduce((s,c)=>s+c.remaining,0);
+    return {sched:ws,placed:newPlaced,skipped:newSkipped,conflicts:remainingConflicts};
+  }
 
   runIterations();
 } // fin runGenEngine
+
+function runGenInfantil(){
+  const glog=$("glog");
+  if(glog){ glog.querySelectorAll("div[style*='border:1px solid #4ade80']").forEach(p=>p.remove()); }
+  const ln=document.createElement("div");
+  ln.style.color="#80bde2"; ln.textContent="🚀 FASE 2: Generando horarios de Infantil...";
+  $("glog").appendChild(ln); $("glog").scrollTop=$("glog").scrollHeight;
+
+  setTimeout(()=>{
+    const t0=Date.now();
+    const lectSlots=S.slots.filter(s=>s.type==="class").map(s=>s.n);
+    const DAYS_N=[1,2,3,4,5];
+    const infGroups=S.groups.filter(g=>g.level==="infantil");
+
+    // Reconstruir teacherBusy desde primaria ya generada
+    const teacherBusy={};
+    S.teachers.forEach(t=>{
+      teacherBusy[t.id]={}; DAYS_N.forEach(d=>{ teacherBusy[t.id][d]={}; });
+      (t.unavail||[]).forEach(u=>{ teacherBusy[t.id][u.d][u.s]=true; });
+    });
+    // Marcar franjas ocupadas por primaria
+    S.groups.filter(g=>g.level==="primaria").forEach(g=>{
+      DAYS_N.forEach(d=>{
+        lectSlots.forEach(slot=>{
+          const cell=S.schedule[g.name]?.[d]?.[slot];
+          if(cell?.t) teacherBusy[cell.t][d][slot]=true;
+        });
+      });
+    });
+
+    const schedInf={};
+    infGroups.forEach(g=>{ schedInf[g.name]={}; DAYS_N.forEach(d=>{ schedInf[g.name][d]={}; }); });
+
+    // Construir tareas de infantil
+    const infTasks=[];
+    infGroups.forEach(g=>{
+      (S.curriculum[g.id]||[]).forEach(e=>{
+        if(e.sessions>0){
+          const code=S.subjects.find(s=>s.id===e.sid)?.code||"???";
+          infTasks.push({gname:g.name,sid:e.sid,tid:e.tid,sessions:e.sessions,code,_placed:false});
+        }
+      });
+    });
+
+    // Orden: especialistas primero (EF, MUS, LEX), tutoras después, GLOB al final
+    infTasks.sort((a,b)=>{
+      const aSpec=!infGroups.find(g=>g.name===a.gname&&g.tutorId===a.tid);
+      const bSpec=!infGroups.find(g=>g.name===b.gname&&g.tutorId===b.tid);
+      if(aSpec&&!bSpec) return -1;
+      if(!aSpec&&bSpec) return 1;
+      if(a.code==='GLOB'&&b.code!=='GLOB') return 1;
+      if(a.code!=='GLOB'&&b.code==='GLOB') return -1;
+      return b.sessions-a.sessions;
+    });
+
+    let infPlaced=0,infSkipped=0;
+    const infConflicts=[];
+
+    infTasks.forEach(task=>{
+      let remaining=task.sessions;
+      const dayCount={}; DAYS_N.forEach(d=>dayCount[d]=0);
+      const placements=[];
+
+      // Máx 1 sesión por día en primera pasada, luego 2, luego sin límite
+      for(let maxPD=1;maxPD<=5&&remaining>0;maxPD++){
+        const days=[...DAYS_N].sort(()=>Math.random()-0.5);
+        for(const day of days){
+          if(remaining<=0||dayCount[day]>=maxPD) continue;
+          const free=lectSlots.filter(slot=>{
+            if(schedInf[task.gname][day][slot]) return false;
+            if(task.tid&&teacherBusy[task.tid][day][slot]) return false;
+            return true;
+          }).sort(()=>Math.random()-0.5);
+          if(free.length===0) continue;
+          const slot=free[0];
+          schedInf[task.gname][day][slot]={s:task.code,t:task.tid};
+          if(task.tid) teacherBusy[task.tid][day][slot]=true;
+          placements.push({day,slot}); dayCount[day]++; remaining--;
+        }
+      }
+
+      if(remaining===0){
+        infPlaced+=task.sessions; task._placed=true;
+      } else {
+        infSkipped+=task.sessions;
+        infConflicts.push(`${task.gname}|${task.code}|faltan ${remaining}`);
+      }
+    });
+
+    infGroups.forEach(g=>{ S.schedule[g.name]=schedInf[g.name]; });
+    save();
+
+    const elapsed=Date.now()-t0;
+    const div=document.createElement("div");
+    div.style.cssText=`margin-top:10px;padding:10px;border-radius:6px;text-align:center;
+      background:${infSkipped===0?"rgba(74,222,128,.1)":"rgba(251,191,36,.1)"};
+      border:1px solid ${infSkipped===0?"#4ade80":"#fbbf24"}`;
+    div.innerHTML=infSkipped===0
+      ?`<div style="color:#4ade80;font-weight:800">🎉 HORARIO COMPLETO — Primaria + Infantil sin errores</div>
+        <button onclick="this.parentNode.remove();navigate('schedule')" style="margin-top:8px;background:#4ade80;color:#002b4a;border:none;padding:8px 18px;font-weight:800;border-radius:4px;cursor:pointer">📅 Ver horario completo</button>`
+      :`<div style="color:#fbbf24;font-weight:800">⚠ Infantil: ${infSkipped} sesiones sin colocar</div>
+        <div style="color:var(--tx3);font-size:11px;margin-top:4px">${infConflicts.join(" · ")}</div>
+        <button onclick="runGenInfantil()" style="margin-top:8px;background:#fbbf24;color:#002b4a;border:none;padding:7px 14px;font-weight:800;border-radius:4px;cursor:pointer">🔄 Reintentar Infantil</button>`;
+    $("glog").appendChild(div); $("glog").scrollTop=$("glog").scrollHeight;
+
+    if(infSkipped===0) toast("🎉 Horario completo — Primaria + Infantil sin errores");
+    else toast(`Infantil: ${infSkipped} sesiones sin colocar`,"warn");
+    navigate("schedule");
+  },100);
+}
 
 function finishGen(score,hardV,skipped){
   const btn=$("gbtn");if(!btn)return;
@@ -3027,8 +3932,8 @@ function finishGen(score,hardV,skipped){
   const div=document.createElement("div");
   if(perfect){
     div.style.cssText="margin-top:12px;padding:12px;background:rgba(74,222,128,.1);border:1px solid #4ade80;border-radius:6px;text-align:center";
-    div.innerHTML=`<div style="color:#4ade80;font-weight:800;margin-bottom:8px">🎉 HORARIO COMPLETO SIN ERRORES</div>
-      <button onclick="this.parentNode.remove();navigate('schedule')" style="background:#4ade80;color:#002b4a;border:none;padding:8px 18px;font-weight:800;border-radius:4px;cursor:pointer">📅 Ver horario</button>`;
+    div.innerHTML=`<div style="color:#4ade80;font-weight:800;margin-bottom:8px">🎉 HORARIO COMPLETO — Infantil + Primaria sin errores</div>
+      <button onclick="this.parentNode.remove();navigate('schedule')" style="background:#4ade80;color:#002b4a;border:none;padding:8px 18px;font-weight:800;border-radius:4px;cursor:pointer">📅 Ver horario completo</button>`;
     toast("🎉 Horario completo sin errores");
     navigate("schedule");
   } else {
@@ -3054,7 +3959,7 @@ function pgSchedule(c){
   if(!svTch)svTch=S.teachers[0]?.id;
   c.innerHTML=`<div class="sh2"><div><h1>Horarios</h1><p>Drag & Drop para reordenar</p></div>
   <div style="display:flex;gap:7px;flex-wrap:wrap">
-    <div class="tabs"><button class="tbtn ${svMode==="group"?"on":""}" onclick="svMode='group';pgSchedule($('ct'))">Por grupo</button><button class="tbtn ${svMode==="teacher"?"on":""}" onclick="svMode='teacher';pgSchedule($('ct'))">Por profesor</button></div>
+    <div class="tabs"><button class="tbtn ${svMode==="group"?"on":""}" onclick="svMode='group';pgSchedule($('ct'))">Por grupo</button><button class="tbtn ${svMode==="teacher"?"on":""}" onclick="svMode='teacher';pgSchedule($('ct'))">Por profesor</button><button class="tbtn ${svMode==="recess"?"on":""}" onclick="svMode='recess';pgSchedule($('ct'))">Recreos</button></div>
     <button class="btn bp2 bsm" onclick="${svMode==="group"?"printGroupSchedule()":"printTeacherSchedule()"}">🖨️ Imprimir</button>
     <button class="btn bo bsm" onclick="navigate('generator')">⚡ Regenerar</button>
     <button class="btn bsm" style="background:#16a34a;color:#fff;border:none" onclick="downloadAllSchedules()">📥 Descargar todos</button>
@@ -3077,8 +3982,120 @@ function pgSchedule(c){
   drawSG();
 }
 
+function manualPlaceCell(gname, day, slot){
+  if(!S.schedule[gname]) return;
+  // Construir lista de materias pendientes para este grupo
+  const g=S.groups.find(g=>g.name===gname);
+  if(!g) return;
+  const placed={};
+  const DAYS_N=[1,2,3,4,5];
+  const lectSlots=S.slots.filter(s=>s.type==="class").map(s=>s.n);
+  DAYS_N.forEach(d=>lectSlots.forEach(sl=>{
+    const cell=S.schedule[gname]?.[d]?.[sl]||S.schedule[gname]?.[String(d)]?.[String(sl)];
+    if(cell?.s) placed[cell.s]=(placed[cell.s]||0)+1;
+  }));
+  const pending=[];
+  (S.curriculum[g.id]||[]).forEach(e=>{
+    const code=S.subjects.find(s=>s.id===e.sid)?.code||"?";
+    const tname=S.teachers.find(t=>t.id===e.tid)?.name||"?";
+    const got=placed[code]||0;
+    if(got<e.sessions) pending.push({code,tname,tid:e.tid,missing:e.sessions-got});
+  });
+
+  if(pending.length===0){ toast("No hay sesiones pendientes en este grupo"); return; }
+
+  // Mostrar modal de selección
+  const opts=pending.map(p=>`<option value="${p.code}|${p.tid}">${p.code} — ${p.tname} (faltan ${p.missing})</option>`).join('');
+  const mb=document.createElement('div');
+  mb.className='mb-overlay';
+  mb.innerHTML=`<div class="mb" style="max-width:340px">
+    <div style="font-size:14px;font-weight:800;color:var(--tx);margin-bottom:12px">
+      Añadir sesión en ${gname} — ${['Lun','Mar','Mié','Jue','Vie'][day-1]} ${slot}ª
+    </div>
+    <div class="f" style="margin-bottom:14px">
+      <label>Materia pendiente</label>
+      <select id="manual-sel" style="width:100%">${opts}</select>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="this.closest('.mb-overlay').remove()">Cancelar</button>
+      <button class="btn bg2" onclick="doManualPlace('${gname}','${day}','${slot}',document.getElementById('manual-sel').value);this.closest('.mb-overlay').remove()">Colocar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(mb);
+  mb.addEventListener('click',e=>{ if(e.target===mb) mb.remove(); });
+}
+
+function doManualPlace(gname,day,slot,val){
+  const [code,tid]=val.split('|');
+  if(!code||!tid) return;
+  if(!S.schedule[gname]) S.schedule[gname]={};
+  if(!S.schedule[gname][day]) S.schedule[gname][day]={};
+  S.schedule[gname][day][slot]={s:code,t:tid};
+  S.schedule[gname][String(day)]=S.schedule[gname][day];
+  save(); pgSchedule($('ct'));
+  toast(`✅ ${code} colocado en ${gname} manualmente`);
+}
+
 function drawSG(){
   const w=$("sgw");if(!w)return;
+
+  // ── Vista de recreos ────────────────────────────────────────
+  if(svMode==="recess"){
+    const recess=S.recess||{};
+    const DAYS_L=["Lunes","Martes","Miércoles","Jueves","Viernes"];
+    let h=`<div style="display:grid;grid-template-columns:120px repeat(5,1fr);gap:4px;min-width:500px">`;
+    h+=`<div></div>${DAYS_L.map(d=>`<div style="font-weight:700;color:var(--tx);text-align:center;padding:6px;background:var(--surf2);border-radius:4px;font-size:12px">${d}</div>`).join("")}`;
+
+    // Primaria
+    h+=`<div style="font-weight:800;color:var(--xblue);font-size:12px;padding:8px 4px;align-self:center">🏫 Primaria<br><span style="font-weight:400;color:var(--tx3);font-size:10px">6 profesores</span></div>`;
+    for(let day=1;day<=5;day++){
+      const profs=(recess.primaria?.[day]||recess.primaria?.[String(day)]||[]);
+      h+=`<div style="background:var(--surf2);border-radius:6px;padding:6px;min-height:80px">`;
+      profs.forEach(name=>{
+        const t=S.teachers.find(t=>t.name===name);
+        const col=t?.color||'#475569';
+        h+=`<div style="font-size:11px;font-weight:600;color:${col};padding:2px 0;border-bottom:1px solid var(--bd)">${name.split(' ')[0]}</div>`;
+      });
+      h+=`</div>`;
+    }
+
+    // Infantil
+    h+=`<div style="font-weight:800;color:#f59e0b;font-size:12px;padding:8px 4px;align-self:center">🧒 Infantil<br><span style="font-weight:400;color:var(--tx3);font-size:10px">3 profesores</span></div>`;
+    for(let day=1;day<=5;day++){
+      const profs=(recess.infantil?.[day]||recess.infantil?.[String(day)]||[]);
+      h+=`<div style="background:var(--surf2);border-radius:6px;padding:6px;min-height:60px">`;
+      profs.forEach(name=>{
+        const t=S.teachers.find(t=>t.name===name);
+        const col=t?.color||'#f59e0b';
+        h+=`<div style="font-size:11px;font-weight:600;color:${col};padding:2px 0;border-bottom:1px solid var(--bd)">${name.split(' ')[0]}</div>`;
+      });
+      h+=`</div>`;
+    }
+    h+=`</div>`;
+
+    // Resumen de recreos por profesor
+    h+=`<div style="margin-top:14px"><div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:8px">Recreos por profesor</div>`;
+    h+=`<div style="display:flex;flex-wrap:wrap;gap:6px">`;
+    S.teachers.forEach(t=>{
+      const prim=Object.values(recess.primaria||{}).filter(day=>day.includes(t.name)).length;
+      const inf=Object.values(recess.infantil||{}).filter(day=>day.includes(t.name)).length;
+      const total=prim+inf;
+      if(total===0) return;
+      h+=`<div style="background:var(--surf2);border-radius:6px;padding:6px 10px;font-size:11px">
+        <span style="font-weight:700;color:var(--tx)">${t.name.split(' ')[0]}</span>
+        <span style="color:var(--tx3)"> · ${total} recreo${total>1?'s':''}</span>
+        ${prim>0?`<span style="color:var(--xblue);font-size:10px"> (P:${prim})</span>`:''}
+        ${inf>0?`<span style="color:#f59e0b;font-size:10px"> (I:${inf})</span>`:''}
+      </div>`;
+    });
+    h+=`</div></div>`;
+
+    w.innerHTML=h;
+    // Ocultar sidebar en vista recreos
+    const sid=$("sgs");if(sid)sid.innerHTML='';
+    return;
+  }
+
   const sched=svMode==="group"?(S.schedule[svGrp]||{}):{};
   let h=`<div class="sg" style="grid-template-columns:90px repeat(5,1fr)"><div></div>${DAYS.map(d=>`<div class="sh3">${d}</div>`).join("")}`;
 
@@ -3109,13 +4126,18 @@ function drawSG(){
         const tch=ses?gt(ses.t):null;
         const cid=`c${d}-${sl.n}`;
         if(ses&&sub){
+          const tch2=ses.t2?gt(ses.t2):null;
           h+=`<div class="sc" id="${cid}" style="background:${sub.bg};border-color:${sub.bd}" draggable="true" data-d="${d}" data-s="${sl.n}">
             <div class="sn" style="font-size:11px;font-weight:800;color:${sub.tx};line-height:1.2">${sub.name}</div>
-            ${svMode==="group"&&tch?`<div style="font-size:9px;color:${sub.tx};opacity:.7;margin-top:2px;display:flex;align-items:center;gap:3px"><div style="width:6px;height:6px;border-radius:50%;background:${tch.color};flex-shrink:0"></div>${tch.name.split(" ")[0]}</div>`:""}
+            ${svMode==="group"&&tch?`<div style="font-size:9px;color:${sub.tx};opacity:.7;margin-top:2px;display:flex;align-items:center;gap:3px"><div style="width:6px;height:6px;border-radius:50%;background:${tch.color};flex-shrink:0"></div>${tch.name.split(" ")[0]}${tch2?` / ${tch2.name.split(" ")[0]}`:""}</div>`:""}
             ${svMode==="teacher"&&ses.group?`<div style="font-size:9px;color:${sub.tx};opacity:.7;margin-top:2px">${ses.group}</div>`:""}
           </div>`;
         } else {
-          h+=`<div class="sc emp" id="${cid}" data-d="${d}" data-s="${sl.n}"></div>`;
+          h+=`<div class="sc emp" id="${cid}" data-d="${d}" data-s="${sl.n}" 
+            ondblclick="manualPlaceCell('${svGrp||svTch}','${d}','${sl.n}')"
+            title="Doble clic para añadir sesión manualmente"
+            style="cursor:pointer;min-height:32px;display:flex;align-items:center;justify-content:center">
+            <span style="color:var(--tx4);font-size:10px">＋</span></div>`;
         }
       } else if(isRecess){
         h+=`<div class="rc" style="background:rgba(224,122,84,.08);border-color:rgba(224,122,84,.25);min-height:32px"><span style="font-size:9px;font-weight:800;color:var(--orange)">RECREO · ${sl.time}</span></div>`;
@@ -3261,7 +4283,7 @@ function drawSG(){
     }
   }
 }
-function getTchSes(tid,day,slot){for(const[gn,gs2] of Object.entries(S.schedule)){const s=gs2[day]?.[slot];if(s&&s.t===tid)return{...s,group:gn};}return null;}
+function getTchSes(tid,day,slot){for(const[gn,gs2] of Object.entries(S.schedule)){const s=gs2[day]?.[slot];if(s&&s.t===tid)return{...s,group:gn};if(s&&s.t2===tid)return{...s,group:gn,t:tid};}return null;}
 function doSwap(src,dst){
   const sch=S.schedule[svGrp];if(!sch)return;
   const sd=+src.dataset.d,ss=+src.dataset.s,dd=+dst.dataset.d,ds=+dst.dataset.s;
@@ -3591,7 +4613,7 @@ const FIREBASE_CONFIG = {
   appId:             "1:1019689719839:web:4a2c92a601082be6d6dd2a"
 };
 
-const LS_KEY  = "ceip_monforte_v5";
+const LS_KEY  = "ceip_monforte_v6";
 const FB_PATH = "ceip_monforte/datos";   // ruta en Realtime Database
 let   fbRef   = null;    // referencia Firebase (null hasta que cargue el SDK)
 let   _saveTimer  = null;
@@ -3654,8 +4676,19 @@ function loadCloud(){
         const val=snap.val();
         if(!val||!val.data){ resolve(false); return; }
         const d=JSON.parse(val.data);
+        // Cargar datos de la nube (schedule, versiones, restricciones)
         Object.keys(d).forEach(k=>{ if(k in S) S[k]=d[k]; });
-        fixSlots();  // migrar formato antiguo
+        fixSlots();
+        // SIEMPRE restaurar datos maestros del preload
+        // (grupos, profesores, curriculum nunca vienen de la nube)
+        if(window._PRELOAD_MASTER){
+          S.teachers=window._PRELOAD_MASTER.teachers;
+          S.groups=window._PRELOAD_MASTER.groups;
+          S.curriculum=window._PRELOAD_MASTER.curriculum;
+          S.slots=window._PRELOAD_MASTER.slots;
+          S.center=window._PRELOAD_MASTER.center;
+          S.recess=window._PRELOAD_MASTER.recess;
+        }
         resolve(true);
       })
       .catch(e=>{ console.warn("RTDB read error:",e); resolve(false); });
@@ -3981,33 +5014,32 @@ window.addEventListener("beforeunload",()=>{ if(_pendingCloud) doCloudSave(); })
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ═══════════════════════════════════════════════════════════════
-// DATOS PRELOADED — CEIP de Monforte v5
+// DATOS PRELOADED — CEIP de Monforte v8
 // ═══════════════════════════════════════════════════════════════
 (function(){
-  const PRELOAD={"center":{"name":"CEIP de Monforte","year":"2024-2025","address":"","phone":"","director":"","code":""},"teachers":[{"name":"Oscar","spec":"Ed. Física 2º,3º,4º","hours":25,"pct":100,"redH":0,"coordH":0,"guardH":1,"supportH":1,"libH":9,"releaseH":0,"dir":false,"jef":false,"itinerant":false,"redType":"union","notes":"2 comedor · 1 EDIXGAL · Sindicato","id":"xmpdzt8dlrql","color":"#3b82f6","unavail":[{"d":1,"s":1},{"d":1,"s":2},{"d":1,"s":3},{"d":3,"s":1},{"d":3,"s":2},{"d":3,"s":3},{"d":3,"s":6},{"d":3,"s":7}],"groupIds":[]},{"id":"xmpedy1axpvr","name":"Cris Meijome","spec":"Tutor 6ºB","hours":25,"pct":100,"coordH":0,"guardH":1,"supportH":0,"libH":3,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[],"groupIds":[],"notes":"Radio","color":"#8b5cf6"},{"id":"xmpedy1ax8xy","name":"Isa","spec":"Secretaria · Apoyo Infantil","hours":25,"pct":100,"coordH":0,"guardH":1,"supportH":1,"libH":8,"releaseH":10,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[],"groupIds":[],"notes":"Equipo directivo · Secretaria del centro","color":"#06b6d4","redType":""},{"id":"xmpedy1axjgy","name":"Silvia López","spec":"Tutora 1ºA","hours":25,"pct":100,"coordH":0,"guardH":1,"supportH":1,"libH":1,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[],"groupIds":[],"notes":"Tutor 1ºA","color":"#ec4899"},{"id":"xmpedy1ax3d0","name":"Arancha Inglés","spec":"Tutora 1ºB · Inglés 1ºA,3ºA,3ºB","hours":25,"pct":100,"coordH":3,"guardH":1,"supportH":0,"libH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[{"d":1,"s":6},{"d":1,"s":7}],"groupIds":[],"notes":"Coordinadora Plurilingüismo","color":"#a855f7","redType":""},{"id":"xmpedy1axg1w","name":"Bea R","spec":"Tutora 5ºB · Inglés 6ºA,6ºB","hours":25,"pct":100,"coordH":0,"guardH":1,"supportH":1,"libH":4,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[],"groupIds":[],"notes":"Inglés 6ºA y 6ºB","color":"#f97316"},{"name":"Ana Jato","spec":"Tutora 4ºA","hours":25,"pct":100,"guardH":1,"supportH":0,"libH":4,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[],"groupIds":[],"notes":"Biblioteca","id":"xmpeq3xkggb7","color":"#14b8a6"},{"name":"Ada","spec":"Tutora 3ºA","hours":25,"pct":100,"guardH":1,"supportH":0,"libH":2,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[],"groupIds":[],"notes":"Coordinadora de Ciclo","id":"xmpeq3xkg1gx","color":"#84cc16"},{"name":"Montse","spec":"Tutora 3ºB","hours":25,"pct":100,"guardH":1,"supportH":0,"libH":4,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[],"groupIds":[],"notes":"Biblioteca · Apoyos","id":"xmpeq3xkgq9t","color":"#0ea5e9"},{"name":"Noelia","spec":"Cotutora 4ºB (media jornada)","hours":25,"pct":50,"guardH":1,"supportH":0,"libH":11,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[],"groupIds":[],"notes":"Media jornada · Cotutora 4ºB con María4º","id":"xmpeq3xkgeh8","color":"#dc2626"},{"name":"María Prieto","spec":"Tutora 6ºA","hours":25,"pct":100,"guardH":1,"supportH":0,"libH":2,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[],"groupIds":[],"notes":"Plástica 2ºA y apoyos","id":"xmpeq3xkgnyv","color":"#db2777","redType":""},{"name":"Caty","spec":"Tutora 5ºA","hours":25,"pct":100,"guardH":1,"supportH":1,"libH":2,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[],"groupIds":[],"notes":"Proyecto Competencial","id":"xmpeq3xkgqyw","color":"#d97706"},{"name":"Diego","spec":"Inglés 2º,4º,5º · Coordinación Pluri","hours":25,"pct":100,"guardH":1,"supportH":1,"libH":2,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[{"d":1,"s":6},{"d":1,"s":7}],"groupIds":[],"notes":"Coordinación Plurilingüismo","id":"xmpeq3xkhy3e","color":"#65a30d"},{"name":"Richi","spec":"Ed. Física 1º,5º,6º,Infantil","hours":25,"pct":100,"guardH":1,"supportH":1,"libH":3,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[{"d":4,"s":1},{"d":4,"s":2},{"d":4,"s":3}],"groupIds":[],"notes":"Polos y PD","id":"xmpeq3xkh78z","color":"#0284c7"},{"name":"Mikel","spec":"Música todos los grupos · MAT 5ºB","hours":25,"pct":100,"guardH":1,"supportH":1,"libH":0,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[{"d":4,"s":1},{"d":4,"s":2},{"d":4,"s":3}],"groupIds":[],"notes":"Completo","id":"xmpeq3xkhruo","color":"#3b82f6"},{"name":"Rubén PT","spec":"Pedagogía Terapéutica","hours":25,"pct":100,"guardH":0,"supportH":0,"libH":0,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[],"groupIds":[],"notes":"PT generalista · 22 ses. atención alumnado · 3 no disponibles","id":"xmpeqaac3qxw","color":"#10b981"},{"name":"Ana Armesto","spec":"Tutora 2ºB","hours":25,"pct":100,"guardH":1,"supportH":0,"libH":3,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[],"groupIds":[],"notes":"Apoyo PT/AL","id":"xmpeqfxmzg7j","color":"#06b6d4"},{"name":"Bea AL","spec":"Tutora 2ºA","hours":25,"pct":100,"guardH":1,"supportH":1,"libH":2,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[],"groupIds":[],"notes":"Apoyo PT/AL","id":"xmpeqilnztq3","color":"#ec4899"},{"name":"María4º","spec":"Cotutora 4ºB (media jornada)","hours":25,"pct":50,"guardH":1,"supportH":0,"libH":11,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[],"groupIds":[],"notes":"Media jornada · Cotutora 4ºB con Noelia","id":"xmpeqilnza34","color":"#a855f7"},{"name":"Teresa","spec":"Directora","hours":25,"pct":100,"guardH":0,"supportH":1,"libH":3,"coordH":0,"releaseH":20,"redH":0,"dir":true,"jef":false,"itinerant":false,"unavail":[],"groupIds":[],"notes":"Directora del centro · 5h lectivas MAT 1ºB","id":"xmpeqilo0k90","color":"#84cc16"},{"id":"elba_reli_001","name":"Elba","spec":"Religión","color":"#7c3aed","unavail":[]}],"groups":[{"id":"xmpeikrdo6q3","name":"1ºA","level":"primaria","grade":1,"section":"A","tutorId":"xmpedy1axjgy","students":25,"bilingual":false},{"id":"xmpeikrdpwcj","name":"1ºB","level":"primaria","grade":1,"section":"B","tutorId":"xmpedy1ax3d0","students":25,"bilingual":false},{"id":"xmpeikrdpwy6","name":"2ºA","level":"primaria","grade":2,"section":"A","tutorId":"xmpeqilnztq3","students":25,"bilingual":false},{"id":"xmpeikrdpyy5","name":"2ºB","level":"primaria","grade":2,"section":"B","tutorId":"xmpeqfxmzg7j","students":25,"bilingual":false},{"id":"xmpeikrdpmmm","name":"3ºA","level":"primaria","grade":3,"section":"A","tutorId":"xmpeq3xkg1gx","students":25,"bilingual":false},{"id":"xmpeikrdpyr2","name":"3ºB","level":"primaria","grade":3,"section":"B","tutorId":"xmpeq3xkgq9t","students":25,"bilingual":false},{"id":"xmpeikrdp52g","name":"4ºA","level":"primaria","grade":4,"section":"A","tutorId":"xmpeq3xkggb7","students":25,"bilingual":false},{"id":"xmpeikrdp3qw","name":"4ºB","level":"primaria","grade":4,"section":"B","tutorId":"xmpeq3xkgeh8","students":25,"bilingual":false},{"id":"xmpeikrdpswe","name":"5ºA","level":"primaria","grade":5,"section":"A","tutorId":"xmpeq3xkgqyw","students":25,"bilingual":false},{"id":"xmpeikrdpeug","name":"5ºB","level":"primaria","grade":5,"section":"B","tutorId":"xmpedy1axg1w","students":25,"bilingual":false},{"id":"xmpeikrdpx22","name":"6ºA","level":"primaria","grade":6,"section":"A","tutorId":"xmpeq3xkgnyv","students":25,"bilingual":false},{"id":"xmpeikrdp58c","name":"6ºB","level":"primaria","grade":6,"section":"B","tutorId":"xmpedy1axpvr","students":25,"bilingual":false}],"curriculum":{"xmpeikrdo6q3":[{"sid":"s1","tid":"xmpedy1axjgy","sessions":5},{"sid":"s2","tid":"xmpedy1axjgy","sessions":4},{"sid":"s3","tid":"xmpedy1axjgy","sessions":4},{"sid":"s4","tid":"xmpedy1ax3d0","sessions":2},{"sid":"s5","tid":"xmpedy1axjgy","sessions":3},{"sid":"s6","tid":"xmpedy1axjgy","sessions":2},{"sid":"s7","tid":"xmpeq3xkh78z","sessions":2},{"sid":"s8","tid":"xmpedy1axjgy","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s11","tid":"xmpeqilnztq3","sessions":1},{"sid":"s11","tid":"elba_reli_001","sessions":1}],"xmpeikrdpwcj":[{"sid":"s1","tid":"xmpeqilo0k90","sessions":5},{"sid":"s2","tid":"xmpedy1ax3d0","sessions":4},{"sid":"s3","tid":"xmpedy1ax3d0","sessions":4},{"sid":"s4","tid":"xmpedy1ax3d0","sessions":2},{"sid":"s5","tid":"xmpeq3xkgeh8","sessions":3},{"sid":"s6","tid":"xmpedy1ax3d0","sessions":2},{"sid":"s7","tid":"xmpeq3xkh78z","sessions":2},{"sid":"s8","tid":"xmpedy1ax3d0","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s11","tid":"xmpeqfxmzg7j","sessions":1},{"sid":"s11","tid":"elba_reli_001","sessions":1}],"xmpeikrdpwy6":[{"sid":"s1","tid":"xmpeqilnztq3","sessions":5},{"sid":"s2","tid":"xmpeqilnztq3","sessions":4},{"sid":"s3","tid":"xmpeqilnztq3","sessions":4},{"sid":"s4","tid":"xmpeq3xkhy3e","sessions":2},{"sid":"s5","tid":"xmpeqilnztq3","sessions":2},{"sid":"s6","tid":"xmpeqilnztq3","sessions":3},{"sid":"s7","tid":"xmpdzt8dlrql","sessions":2},{"sid":"s8","tid":"xmpeq3xkgnyv","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s11","tid":"xmpeqilnztq3","sessions":1},{"sid":"s11","tid":"elba_reli_001","sessions":1}],"xmpeikrdpyy5":[{"sid":"s1","tid":"xmpeqfxmzg7j","sessions":5},{"sid":"s2","tid":"xmpeqfxmzg7j","sessions":4},{"sid":"s3","tid":"xmpeqfxmzg7j","sessions":4},{"sid":"s4","tid":"xmpeq3xkhy3e","sessions":2},{"sid":"s5","tid":"xmpeqfxmzg7j","sessions":2},{"sid":"s6","tid":"xmpeqfxmzg7j","sessions":3},{"sid":"s7","tid":"xmpdzt8dlrql","sessions":2},{"sid":"s8","tid":"xmpeq3xkgnyv","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s11","tid":"xmpeqfxmzg7j","sessions":1},{"sid":"s11","tid":"elba_reli_001","sessions":1}],"xmpeikrdpmmm":[{"sid":"s1","tid":"xmpeq3xkg1gx","sessions":4},{"sid":"s2","tid":"xmpeq3xkg1gx","sessions":4},{"sid":"s3","tid":"xmpeq3xkg1gx","sessions":4},{"sid":"s4","tid":"xmpedy1ax3d0","sessions":3},{"sid":"s5","tid":"xmpeq3xkg1gx","sessions":3},{"sid":"s6","tid":"xmpeq3xkg1gx","sessions":2},{"sid":"s7","tid":"xmpdzt8dlrql","sessions":2},{"sid":"s8","tid":"xmpeq3xkg1gx","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s11","tid":"xmpeq3xkg1gx","sessions":1},{"sid":"s11","tid":"elba_reli_001","sessions":1}],"xmpeikrdpyr2":[{"sid":"s1","tid":"xmpeq3xkgq9t","sessions":4},{"sid":"s2","tid":"xmpeq3xkgq9t","sessions":4},{"sid":"s3","tid":"xmpeq3xkgq9t","sessions":4},{"sid":"s4","tid":"xmpedy1ax3d0","sessions":3},{"sid":"s5","tid":"xmpeq3xkgq9t","sessions":3},{"sid":"s6","tid":"xmpeq3xkgq9t","sessions":2},{"sid":"s7","tid":"xmpdzt8dlrql","sessions":2},{"sid":"s8","tid":"xmpeq3xkg1gx","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s11","tid":"xmpeq3xkgq9t","sessions":1},{"sid":"s11","tid":"elba_reli_001","sessions":1}],"xmpeikrdp52g":[{"sid":"s1","tid":"xmpeq3xkggb7","sessions":4},{"sid":"s2","tid":"xmpeq3xkggb7","sessions":4},{"sid":"s3","tid":"xmpeq3xkggb7","sessions":4},{"sid":"s4","tid":"xmpeq3xkhy3e","sessions":3},{"sid":"s5","tid":"xmpeq3xkggb7","sessions":2},{"sid":"s6","tid":"xmpeq3xkggb7","sessions":3},{"sid":"s7","tid":"xmpdzt8dlrql","sessions":2},{"sid":"s8","tid":"xmpeqilnza34","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s11","tid":"xmpeq3xkggb7","sessions":1},{"sid":"s11","tid":"elba_reli_001","sessions":1}],"xmpeikrdp3qw":[{"sid":"s1","tid":"xmpeq3xkgeh8","sessions":4},{"sid":"s2","tid":"xmpeqilnza34","sessions":4},{"sid":"s3","tid":"xmpeqilnza34","sessions":4},{"sid":"s4","tid":"xmpeq3xkhy3e","sessions":3},{"sid":"s5","tid":"xmpeq3xkgeh8","sessions":2},{"sid":"s6","tid":"xmpeqilnza34","sessions":3},{"sid":"s7","tid":"xmpdzt8dlrql","sessions":2},{"sid":"s8","tid":"xmpeqilnza34","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s11","tid":"xmpeq3xkgeh8","sessions":1},{"sid":"s11","tid":"elba_reli_001","sessions":1}],"xmpeikrdpswe":[{"sid":"s1","tid":"xmpeq3xkgqyw","sessions":4},{"sid":"s2","tid":"xmpeq3xkgqyw","sessions":4},{"sid":"s3","tid":"xmpeq3xkgqyw","sessions":4},{"sid":"s4","tid":"xmpeq3xkhy3e","sessions":3},{"sid":"s5","tid":"xmpeq3xkgqyw","sessions":3},{"sid":"s6","tid":"xmpeq3xkgqyw","sessions":2},{"sid":"s7","tid":"xmpeq3xkh78z","sessions":2},{"sid":"s8","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s11","tid":"xmpeq3xkgqyw","sessions":1},{"sid":"s11","tid":"elba_reli_001","sessions":1}],"xmpeikrdpeug":[{"sid":"s1","tid":"xmpeq3xkhruo","sessions":4},{"sid":"s2","tid":"xmpedy1axg1w","sessions":4},{"sid":"s3","tid":"xmpedy1axg1w","sessions":4},{"sid":"s4","tid":"xmpeq3xkhy3e","sessions":3},{"sid":"s5","tid":"xmpedy1axg1w","sessions":3},{"sid":"s6","tid":"xmpedy1axg1w","sessions":2},{"sid":"s7","tid":"xmpeq3xkh78z","sessions":2},{"sid":"s8","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s11","tid":"xmpeq3xkgqyw","sessions":1},{"sid":"s11","tid":"elba_reli_001","sessions":1}],"xmpeikrdpx22":[{"sid":"s1","tid":"xmpeq3xkgnyv","sessions":4},{"sid":"s2","tid":"xmpeq3xkgnyv","sessions":4},{"sid":"s3","tid":"xmpeq3xkgnyv","sessions":4},{"sid":"s4","tid":"xmpedy1axg1w","sessions":3},{"sid":"s5","tid":"xmpeq3xkgnyv","sessions":2},{"sid":"s6","tid":"xmpeq3xkgnyv","sessions":2},{"sid":"s7","tid":"xmpeq3xkh78z","sessions":2},{"sid":"s8","tid":"xmpeq3xkgnyv","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s10","tid":"xmpeq3xkgnyv","sessions":1},{"sid":"s11","tid":"xmpeq3xkgqyw","sessions":1},{"sid":"s11","tid":"elba_reli_001","sessions":1}],"xmpeikrdp58c":[{"sid":"s1","tid":"xmpedy1axpvr","sessions":4},{"sid":"s2","tid":"xmpedy1axpvr","sessions":4},{"sid":"s3","tid":"xmpedy1axpvr","sessions":4},{"sid":"s4","tid":"xmpedy1axg1w","sessions":3},{"sid":"s5","tid":"xmpedy1axpvr","sessions":2},{"sid":"s6","tid":"xmpedy1axpvr","sessions":2},{"sid":"s7","tid":"xmpeq3xkh78z","sessions":2},{"sid":"s8","tid":"xmpedy1axpvr","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s10","tid":"xmpedy1axpvr","sessions":1},{"sid":"s11","tid":"xmpedy1axpvr","sessions":1},{"sid":"s11","tid":"elba_reli_001","sessions":1}]},"constraints":[{"id":1,"type":"shared_space","target":"2ºA,2ºB,3ºA,3ºB,4ºA,4ºB,5ºA,5ºB,6ºA,6ºB","subject":"EF","rule":"shared_space","desc":"Comparten el pabellón, no puede impartirse a la misma hora","priority":10,"isHard":true,"groups":["2ºA","2ºB","3ºA","3ºB","4ºA","4ºB","5ºA","5ºB","6ºA","6ºB"]}],"versions":[{"name":"Versión 28","score":30,"hardViolations":0,"softViolations":29,"date":"Ahora"},{"name":"Versión 27","score":30,"hardViolations":0,"softViolations":18,"date":"Ahora"},{"name":"Versión 26","score":30,"hardViolations":0,"softViolations":21,"date":"Ahora"},{"name":"Versión 25","score":30,"hardViolations":0,"softViolations":24,"date":"Ahora"},{"name":"Versión 24","score":30,"hardViolations":0,"softViolations":18,"date":"Ahora"},{"name":"Versión 23","score":30,"hardViolations":0,"softViolations":19,"date":"Ahora"},{"name":"Versión 22","score":30,"hardViolations":0,"softViolations":17,"date":"Ahora"},{"name":"Versión 21","score":30,"hardViolations":0,"softViolations":16,"date":"Ahora"},{"name":"Versión 20","score":30,"hardViolations":0,"softViolations":15,"date":"Ahora"},{"name":"Versión 19","score":30,"hardViolations":0,"softViolations":10,"date":"Ahora"},{"name":"Versión 18","score":30,"hardViolations":0,"softViolations":13,"date":"Ahora"},{"name":"Versión 17","score":30,"hardViolations":0,"softViolations":14,"date":"Ahora"},{"name":"Versión 16","score":30,"hardViolations":0,"softViolations":22,"date":"Ahora"},{"name":"Versión 15","score":30,"hardViolations":0,"softViolations":14,"date":"Ahora"},{"name":"Versión 14","score":30,"hardViolations":0,"softViolations":14,"date":"Ahora"},{"name":"Versión 13","score":30,"hardViolations":0,"softViolations":13,"date":"Ahora"},{"name":"Versión 12","score":30,"hardViolations":0,"softViolations":14,"date":"Ahora"},{"name":"Versión 11","score":30,"hardViolations":0,"softViolations":13,"date":"Ahora"},{"name":"Versión 10","score":30,"hardViolations":0,"softViolations":12,"date":"Ahora"},{"name":"Versión 9","score":44,"hardViolations":0,"softViolations":7,"date":"Ahora"},{"name":"Versión 8","score":30,"hardViolations":0,"softViolations":47,"date":"Ahora"},{"name":"Versión 7","score":30,"hardViolations":0,"softViolations":30,"date":"Ahora"},{"name":"Versión 6","score":30,"hardViolations":0,"softViolations":47,"date":"Ahora"},{"name":"Versión 5","score":36,"hardViolations":0,"softViolations":8,"date":"Ahora"},{"name":"Versión 4","score":30,"hardViolations":0,"softViolations":10,"date":"Ahora"},{"name":"Versión 3","score":30,"hardViolations":0,"softViolations":9,"date":"Ahora"},{"name":"Versión 2","score":44,"hardViolations":0,"softViolations":7,"date":"Ahora"},{"name":"Versión 1","score":82,"hardViolations":0,"softViolations":2,"date":"Ahora"}],"slots":[{"n":1,"time":"09:00–09:50","label":"1ª sesión","type":"class","recess":false},{"n":2,"time":"09:50–10:40","label":"2ª sesión","type":"class","recess":false},{"n":3,"time":"10:40–11:30","label":"3ª sesión","type":"class","recess":false},{"n":4,"time":"11:30–11:55","label":"Recreo","type":"recess","recess":true},{"n":5,"time":"11:55–12:20","label":"Hora de Leer","type":"reading","recess":true},{"n":6,"time":"12:20–13:10","label":"4ª sesión","type":"class","recess":false},{"n":7,"time":"13:10–14:00","label":"5ª sesión","type":"class","recess":false},{"n":8,"time":"14:00–15:00","label":"Comedor","type":"lunch","recess":true},{"n":9,"time":"15:00–16:00","label":"Guardia Biblioteca","type":"library","recess":true}]};
-  const lsKey="ceip_monforte_v5";
-  // Limpiar todas las versiones anteriores
-  ["ceip_monforte_v1","ceip_monforte_v2","ceip_monforte_v3","ceip_monforte_v4"].forEach(k=>localStorage.removeItem(k));
-  const existing=localStorage.getItem(lsKey);
-  if(!existing){
-    // Primera carga: usar preload completo
-    Object.keys(PRELOAD).forEach(k=>{ if(k in S) S[k]=PRELOAD[k]; });
-  } else {
-    try{
-      const saved=JSON.parse(existing);
-      // SIEMPRE usar teachers, groups y curriculum del preload (datos maestros)
-      saved.teachers=PRELOAD.teachers;
-      saved.groups=PRELOAD.groups;
-      saved.curriculum=PRELOAD.curriculum;
-      saved.slots=PRELOAD.slots;
-      saved.center=PRELOAD.center;
-      // Solo conservar del localStorage: horarios generados, versiones, restricciones
-      Object.keys(saved).forEach(k=>{ if(k in S) S[k]=saved[k]; });
-    }catch(e){
-      Object.keys(PRELOAD).forEach(k=>{ if(k in S) S[k]=PRELOAD[k]; });
-    }
-  }
+  const PRELOAD={"center":{"name":"CEIP de Monforte","year":"2024-2025","address":"","phone":"","director":"","code":""},"teachers":[{"name":"Oscar","spec":"Ed. Física 2º,3º,4º","hours":25,"pct":100,"redH":0,"coordH":0,"guardH":1,"supportH":1,"libH":9,"releaseH":0,"dir":false,"jef":false,"itinerant":false,"redType":"union","notes":"2 comedor · 1 EDIXGAL · Sindicato","id":"xmpdzt8dlrql","color":"#3b82f6","unavail":[{"d":1,"s":1},{"d":1,"s":2},{"d":1,"s":3},{"d":3,"s":1},{"d":3,"s":2},{"d":3,"s":3},{"d":3,"s":6},{"d":3,"s":7}],"groupIds":[]},{"id":"xmpedy1axpvr","name":"Cris Meijome","spec":"Tutor 6ºB","hours":25,"pct":100,"coordH":0,"guardH":1,"supportH":0,"libH":3,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[{"d":1,"s":1},{"d":1,"s":2}],"groupIds":[],"notes":"Radio","color":"#8b5cf6"},{"id":"xmpedy1ax8xy","name":"Isa","spec":"Secretaria · Apoyo Infantil","hours":25,"pct":100,"coordH":0,"guardH":1,"supportH":1,"libH":8,"releaseH":10,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[{"d":3,"s":1},{"d":3,"s":2},{"d":3,"s":3}],"groupIds":[],"notes":"Equipo directivo · Secretaria del centro","color":"#06b6d4","redType":""},{"id":"xmpedy1axjgy","name":"Silvia López","spec":"Tutora 1ºA","hours":25,"pct":100,"coordH":0,"guardH":1,"supportH":1,"libH":1,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[{"d":5,"s":6},{"d":5,"s":7}],"groupIds":[],"notes":"Tutor 1ºA","color":"#ec4899"},{"id":"xmpedy1ax3d0","name":"Arancha Inglés","spec":"Tutora 1ºB · Inglés 1ºA,3ºA,3ºB","hours":25,"pct":100,"coordH":3,"guardH":1,"supportH":0,"libH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[{"d":1,"s":6},{"d":1,"s":7}],"groupIds":[],"notes":"Coordinadora Plurilingüismo","color":"#a855f7","redType":""},{"id":"xmpedy1axg1w","name":"Bea R","spec":"Tutora 5ºB · Inglés 6ºA,6ºB","hours":25,"pct":100,"coordH":0,"guardH":1,"supportH":1,"libH":4,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[{"d":3,"s":6}],"groupIds":[],"notes":"Inglés 6ºA y 6ºB","color":"#f97316"},{"name":"Ana Jato","spec":"Tutora 4ºA","hours":25,"pct":100,"guardH":1,"supportH":0,"libH":4,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[{"d":2,"s":1},{"d":2,"s":2}],"groupIds":[],"notes":"Biblioteca","id":"xmpeq3xkggb7","color":"#14b8a6"},{"name":"Ada","spec":"Tutora 3ºA","hours":25,"pct":100,"guardH":1,"supportH":0,"libH":2,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[{"d":4,"s":6},{"d":4,"s":7}],"groupIds":[],"notes":"Coordinadora de Ciclo","id":"xmpeq3xkg1gx","color":"#84cc16"},{"name":"Montse","spec":"Tutora 3ºB","hours":25,"pct":100,"guardH":1,"supportH":0,"libH":4,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[{"d":4,"s":6},{"d":4,"s":7}],"groupIds":[],"notes":"Biblioteca · Apoyos","id":"xmpeq3xkgq9t","color":"#0ea5e9"},{"name":"Noelia","spec":"Cotutora 4ºB (media jornada)","hours":25,"pct":50,"guardH":1,"supportH":0,"libH":11,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[],"groupIds":[],"notes":"Media jornada · Cotutora 4ºB con María4º","id":"xmpeq3xkgeh8","color":"#dc2626"},{"name":"María Prieto","spec":"Tutora 6ºA","hours":25,"pct":100,"guardH":1,"supportH":0,"libH":2,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[{"d":2,"s":1},{"d":2,"s":2}],"groupIds":[],"notes":"Plástica 2ºA y apoyos","id":"xmpeq3xkgnyv","color":"#db2777","redType":""},{"name":"Caty","spec":"Tutora 5ºA","hours":25,"pct":100,"guardH":1,"supportH":1,"libH":2,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[{"d":3,"s":1},{"d":3,"s":2}],"groupIds":[],"notes":"Proyecto Competencial","id":"xmpeq3xkgqyw","color":"#d97706"},{"name":"Diego","spec":"Inglés 2º,4º,5º · Coordinación Pluri","hours":25,"pct":100,"guardH":1,"supportH":1,"libH":2,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[{"d":1,"s":6},{"d":1,"s":7}],"groupIds":[],"notes":"Coordinación Plurilingüismo","id":"xmpeq3xkhy3e","color":"#65a30d"},{"name":"Richi","spec":"Ed. Física 1º,5º,6º,Infantil","hours":25,"pct":100,"guardH":1,"supportH":1,"libH":3,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[{"d":4,"s":1},{"d":4,"s":2},{"d":4,"s":3}],"groupIds":[],"notes":"Polos y PD","id":"xmpeq3xkh78z","color":"#0284c7"},{"name":"Mikel","spec":"Música todos los grupos · MAT 5ºB","hours":25,"pct":100,"guardH":1,"supportH":1,"libH":0,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[{"d":4,"s":1},{"d":4,"s":2},{"d":4,"s":3}],"groupIds":[],"notes":"Completo","id":"xmpeq3xkhruo","color":"#3b82f6"},{"name":"Rubén PT","spec":"Pedagogía Terapéutica","hours":25,"pct":100,"guardH":0,"supportH":0,"libH":0,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[{"d":4,"s":6},{"d":4,"s":7}],"groupIds":[],"notes":"PT generalista · 22 ses. atención alumnado · 3 no disponibles","id":"xmpeqaac3qxw","color":"#10b981"},{"name":"Ana Armesto","spec":"Tutora 2ºB","hours":25,"pct":100,"guardH":1,"supportH":0,"libH":3,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[{"d":4,"s":6},{"d":4,"s":7}],"groupIds":[],"notes":"Apoyo PT/AL","id":"xmpeqfxmzg7j","color":"#06b6d4"},{"name":"Bea AL","spec":"Tutora 2ºA","hours":25,"pct":100,"guardH":1,"supportH":1,"libH":2,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[{"d":5,"s":6},{"d":5,"s":7}],"groupIds":[],"notes":"Apoyo PT/AL","id":"xmpeqilnztq3","color":"#ec4899"},{"name":"María4º","spec":"Cotutora 4ºB (media jornada)","hours":25,"pct":50,"guardH":1,"supportH":0,"libH":11,"coordH":0,"releaseH":0,"redH":0,"dir":false,"jef":false,"itinerant":false,"unavail":[],"groupIds":[],"notes":"Media jornada · Cotutora 4ºB con Noelia","id":"xmpeqilnza34","color":"#a855f7"},{"name":"Teresa","spec":"Directora","hours":25,"pct":100,"guardH":0,"supportH":1,"libH":3,"coordH":0,"releaseH":20,"redH":0,"dir":true,"jef":false,"itinerant":false,"unavail":[{"d":5,"s":1},{"d":5,"s":2},{"d":5,"s":3}],"groupIds":[],"notes":"Directora del centro · 5h lectivas MAT 1ºB","id":"xmpeqilo0k90","color":"#84cc16"},{"id":"elba_reli_001","name":"Elba","spec":"Religión","color":"#7c3aed","unavail":[]},{"id":"inf_silvia_001","name":"Silvia Inf","spec":"Tutora Infantil 3 años","color":"#0ea5e9","unavail":[{"d":4,"s":6},{"d":4,"s":7}]},{"id":"inf_cristina_001","name":"Cristina","spec":"Tutora Infantil 4 años","color":"#f59e0b","unavail":[{"d":1,"s":1},{"d":1,"s":2}]},{"id":"inf_goretti_001","name":"Goretti","spec":"Tutora Infantil 5 años","color":"#ef4444","unavail":[{"d":2,"s":1},{"d":2,"s":2},{"d":2,"s":3}]}],"groups":[{"id":"xmpeikrdo6q3","name":"1ºA","level":"primaria","grade":1,"section":"A","tutorId":"xmpedy1axjgy","students":25,"bilingual":false},{"id":"xmpeikrdpwcj","name":"1ºB","level":"primaria","grade":1,"section":"B","tutorId":"xmpedy1ax3d0","students":25,"bilingual":false},{"id":"xmpeikrdpwy6","name":"2ºA","level":"primaria","grade":2,"section":"A","tutorId":"xmpeqilnztq3","students":25,"bilingual":false},{"id":"xmpeikrdpyy5","name":"2ºB","level":"primaria","grade":2,"section":"B","tutorId":"xmpeqfxmzg7j","students":25,"bilingual":false},{"id":"xmpeikrdpmmm","name":"3ºA","level":"primaria","grade":3,"section":"A","tutorId":"xmpeq3xkg1gx","students":25,"bilingual":false},{"id":"xmpeikrdpyr2","name":"3ºB","level":"primaria","grade":3,"section":"B","tutorId":"xmpeq3xkgq9t","students":25,"bilingual":false},{"id":"xmpeikrdp52g","name":"4ºA","level":"primaria","grade":4,"section":"A","tutorId":"xmpeq3xkggb7","students":25,"bilingual":false},{"id":"xmpeikrdp3qw","name":"4ºB","level":"primaria","grade":4,"section":"B","tutorId":"xmpeq3xkgeh8","students":25,"bilingual":false},{"id":"xmpeikrdpswe","name":"5ºA","level":"primaria","grade":5,"section":"A","tutorId":"xmpeq3xkgqyw","students":25,"bilingual":false},{"id":"xmpeikrdpeug","name":"5ºB","level":"primaria","grade":5,"section":"B","tutorId":"xmpedy1axg1w","students":25,"bilingual":false},{"id":"xmpeikrdpx22","name":"6ºA","level":"primaria","grade":6,"section":"A","tutorId":"xmpeq3xkgnyv","students":25,"bilingual":false},{"id":"xmpeikrdp58c","name":"6ºB","level":"primaria","grade":6,"section":"B","tutorId":"xmpedy1axpvr","students":25,"bilingual":false},{"id":"g_inf3a","name":"I-3A","level":"infantil","tutorId":"inf_silvia_001"},{"id":"g_inf4a","name":"I-4A","level":"infantil","tutorId":"inf_cristina_001"},{"id":"g_inf5a","name":"I-5A","level":"infantil","tutorId":"inf_goretti_001"}],"curriculum":{"xmpeikrdo6q3":[{"sid":"s1","tid":"xmpedy1axjgy","sessions":5},{"sid":"s2","tid":"xmpedy1axjgy","sessions":4},{"sid":"s3","tid":"xmpedy1axjgy","sessions":4},{"sid":"s4","tid":"xmpedy1ax3d0","sessions":2},{"sid":"s5","tid":"xmpedy1axjgy","sessions":3},{"sid":"s6","tid":"xmpedy1axjgy","sessions":2},{"sid":"s7","tid":"xmpeq3xkh78z","sessions":2},{"sid":"s8","tid":"xmpedy1axjgy","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s11","tid":"xmpeqilnztq3","sessions":1},{"sid":"s11","tid":"elba_reli_001","sessions":1}],"xmpeikrdpwcj":[{"sid":"s1","tid":"xmpeqilo0k90","sessions":5},{"sid":"s2","tid":"xmpedy1ax3d0","sessions":4},{"sid":"s3","tid":"xmpedy1ax3d0","sessions":4},{"sid":"s4","tid":"xmpedy1ax3d0","sessions":2},{"sid":"s5","tid":"xmpeq3xkgeh8","sessions":3},{"sid":"s6","tid":"xmpedy1ax3d0","sessions":2},{"sid":"s7","tid":"xmpeq3xkh78z","sessions":2},{"sid":"s8","tid":"xmpedy1ax3d0","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s11","tid":"xmpeqfxmzg7j","sessions":1},{"sid":"s11","tid":"elba_reli_001","sessions":1}],"xmpeikrdpwy6":[{"sid":"s1","tid":"xmpeqilnztq3","sessions":5},{"sid":"s2","tid":"xmpeqilnztq3","sessions":4},{"sid":"s3","tid":"xmpeqilnztq3","sessions":4},{"sid":"s4","tid":"xmpeq3xkhy3e","sessions":2},{"sid":"s5","tid":"xmpeqilnztq3","sessions":2},{"sid":"s6","tid":"xmpeqilnztq3","sessions":3},{"sid":"s7","tid":"xmpdzt8dlrql","sessions":2},{"sid":"s8","tid":"xmpeq3xkgnyv","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s11","tid":"xmpeqilnztq3","sessions":1},{"sid":"s11","tid":"elba_reli_001","sessions":1}],"xmpeikrdpyy5":[{"sid":"s1","tid":"xmpeqfxmzg7j","sessions":5},{"sid":"s2","tid":"xmpeqfxmzg7j","sessions":4},{"sid":"s3","tid":"xmpeqfxmzg7j","sessions":4},{"sid":"s4","tid":"xmpeq3xkhy3e","sessions":2},{"sid":"s5","tid":"xmpeqfxmzg7j","sessions":2},{"sid":"s6","tid":"xmpeqfxmzg7j","sessions":3},{"sid":"s7","tid":"xmpdzt8dlrql","sessions":2},{"sid":"s8","tid":"xmpeq3xkgnyv","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s11","tid":"xmpeqfxmzg7j","sessions":1},{"sid":"s11","tid":"elba_reli_001","sessions":1}],"xmpeikrdpmmm":[{"sid":"s1","tid":"xmpeq3xkg1gx","sessions":4},{"sid":"s2","tid":"xmpeq3xkg1gx","sessions":4},{"sid":"s3","tid":"xmpeq3xkg1gx","sessions":4},{"sid":"s4","tid":"xmpedy1ax3d0","sessions":3},{"sid":"s5","tid":"xmpeq3xkg1gx","sessions":3},{"sid":"s6","tid":"xmpeq3xkg1gx","sessions":2},{"sid":"s7","tid":"xmpdzt8dlrql","sessions":2},{"sid":"s8","tid":"xmpeq3xkg1gx","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s11","tid":"xmpeq3xkg1gx","sessions":1},{"sid":"s11","tid":"elba_reli_001","sessions":1}],"xmpeikrdpyr2":[{"sid":"s1","tid":"xmpeq3xkgq9t","sessions":4},{"sid":"s2","tid":"xmpeq3xkgq9t","sessions":4},{"sid":"s3","tid":"xmpeq3xkgq9t","sessions":4},{"sid":"s4","tid":"xmpedy1ax3d0","sessions":3},{"sid":"s5","tid":"xmpeq3xkgq9t","sessions":3},{"sid":"s6","tid":"xmpeq3xkgq9t","sessions":2},{"sid":"s7","tid":"xmpdzt8dlrql","sessions":2},{"sid":"s8","tid":"xmpeq3xkg1gx","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s11","tid":"xmpeq3xkgq9t","sessions":1},{"sid":"s11","tid":"elba_reli_001","sessions":1}],"xmpeikrdp52g":[{"sid":"s1","tid":"xmpeq3xkggb7","sessions":4},{"sid":"s2","tid":"xmpeq3xkggb7","sessions":4},{"sid":"s3","tid":"xmpeq3xkggb7","sessions":4},{"sid":"s4","tid":"xmpeq3xkhy3e","sessions":3},{"sid":"s5","tid":"xmpeq3xkggb7","sessions":2},{"sid":"s6","tid":"xmpeq3xkggb7","sessions":3},{"sid":"s7","tid":"xmpdzt8dlrql","sessions":2},{"sid":"s8","tid":"xmpeqilnza34","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s11","tid":"xmpeq3xkggb7","sessions":1},{"sid":"s11","tid":"elba_reli_001","sessions":1}],"xmpeikrdp3qw":[{"sid":"s1","tid":"xmpeq3xkgeh8","sessions":4},{"sid":"s2","tid":"xmpeqilnza34","sessions":4},{"sid":"s3","tid":"xmpeqilnza34","sessions":4},{"sid":"s4","tid":"xmpeq3xkhy3e","sessions":3},{"sid":"s5","tid":"xmpeq3xkgeh8","sessions":2},{"sid":"s6","tid":"xmpeqilnza34","sessions":3},{"sid":"s7","tid":"xmpdzt8dlrql","sessions":2},{"sid":"s8","tid":"xmpeqilnza34","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s11","tid":"xmpeq3xkgeh8","sessions":1},{"sid":"s11","tid":"elba_reli_001","sessions":1}],"xmpeikrdpswe":[{"sid":"s1","tid":"xmpeq3xkgqyw","sessions":4},{"sid":"s2","tid":"xmpeq3xkgqyw","sessions":4},{"sid":"s3","tid":"xmpeq3xkgqyw","sessions":4},{"sid":"s4","tid":"xmpeq3xkhy3e","sessions":3},{"sid":"s5","tid":"xmpeq3xkgqyw","sessions":3},{"sid":"s6","tid":"xmpeq3xkgqyw","sessions":2},{"sid":"s7","tid":"xmpeq3xkh78z","sessions":2},{"sid":"s8","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s11","tid":"xmpeq3xkgqyw","sessions":1},{"sid":"s11","tid":"elba_reli_001","sessions":1}],"xmpeikrdpeug":[{"sid":"s1","tid":"xmpeq3xkhruo","sessions":4},{"sid":"s2","tid":"xmpedy1axg1w","sessions":4},{"sid":"s3","tid":"xmpedy1axg1w","sessions":4},{"sid":"s4","tid":"xmpeq3xkhy3e","sessions":3},{"sid":"s5","tid":"xmpedy1axg1w","sessions":3},{"sid":"s6","tid":"xmpedy1axg1w","sessions":2},{"sid":"s7","tid":"xmpeq3xkh78z","sessions":2},{"sid":"s8","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s11","tid":"xmpeq3xkgqyw","sessions":1},{"sid":"s11","tid":"elba_reli_001","sessions":1}],"xmpeikrdpx22":[{"sid":"s1","tid":"xmpeq3xkgnyv","sessions":4},{"sid":"s2","tid":"xmpeq3xkgnyv","sessions":4},{"sid":"s3","tid":"xmpeq3xkgnyv","sessions":4},{"sid":"s4","tid":"xmpedy1axg1w","sessions":3},{"sid":"s5","tid":"xmpeq3xkgnyv","sessions":2},{"sid":"s6","tid":"xmpeq3xkgnyv","sessions":2},{"sid":"s7","tid":"xmpeq3xkh78z","sessions":2},{"sid":"s8","tid":"xmpeq3xkgnyv","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s10","tid":"xmpeq3xkgnyv","sessions":1},{"sid":"s11","tid":"xmpeq3xkgqyw","sessions":1},{"sid":"s11","tid":"elba_reli_001","sessions":1}],"xmpeikrdp58c":[{"sid":"s1","tid":"xmpedy1axpvr","sessions":4},{"sid":"s2","tid":"xmpedy1axpvr","sessions":4},{"sid":"s3","tid":"xmpedy1axpvr","sessions":4},{"sid":"s4","tid":"xmpedy1axg1w","sessions":3},{"sid":"s5","tid":"xmpedy1axpvr","sessions":2},{"sid":"s6","tid":"xmpedy1axpvr","sessions":2},{"sid":"s7","tid":"xmpeq3xkh78z","sessions":2},{"sid":"s8","tid":"xmpedy1axpvr","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s10","tid":"xmpedy1axpvr","sessions":1},{"sid":"s11","tid":"xmpedy1axpvr","sessions":1},{"sid":"s11","tid":"elba_reli_001","sessions":1}],"g_inf3a":[{"sid":"s_glob","tid":"inf_silvia_001","sessions":20},{"sid":"s4","tid":"xmpeq3xkhy3e","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s7","tid":"xmpeq3xkh78z","sessions":2},{"sid":"s11","tid":"elba_reli_001","sessions":1}],"g_inf4a":[{"sid":"s_glob","tid":"inf_cristina_001","sessions":20},{"sid":"s4","tid":"xmpeq3xkhy3e","sessions":1},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s7","tid":"xmpeq3xkh78z","sessions":2},{"sid":"s11","tid":"elba_reli_001","sessions":1}],"g_inf5a":[{"sid":"s_glob","tid":"inf_goretti_001","sessions":20},{"sid":"s9","tid":"xmpeq3xkhruo","sessions":1},{"sid":"s4","tid":"xmpeq3xkhy3e","sessions":1},{"sid":"s7","tid":"xmpeq3xkh78z","sessions":2},{"sid":"s11","tid":"elba_reli_001","sessions":1}]},"constraints":[{"id":1,"type":"shared_space","target":"2ºA,2ºB,3ºA,3ºB,4ºA,4ºB,5ºA,5ºB,6ºA,6ºB","subject":"EF","rule":"shared_space","desc":"Comparten el pabellón, no puede impartirse a la misma hora","priority":10,"isHard":true,"groups":["2ºA","2ºB","3ºA","3ºB","4ºA","4ºB","5ºA","5ºB","6ºA","6ºB"]}],"versions":[{"name":"Versión 28","score":30,"hardViolations":0,"softViolations":29,"date":"Ahora"},{"name":"Versión 27","score":30,"hardViolations":0,"softViolations":18,"date":"Ahora"},{"name":"Versión 26","score":30,"hardViolations":0,"softViolations":21,"date":"Ahora"},{"name":"Versión 25","score":30,"hardViolations":0,"softViolations":24,"date":"Ahora"},{"name":"Versión 24","score":30,"hardViolations":0,"softViolations":18,"date":"Ahora"},{"name":"Versión 23","score":30,"hardViolations":0,"softViolations":19,"date":"Ahora"},{"name":"Versión 22","score":30,"hardViolations":0,"softViolations":17,"date":"Ahora"},{"name":"Versión 21","score":30,"hardViolations":0,"softViolations":16,"date":"Ahora"},{"name":"Versión 20","score":30,"hardViolations":0,"softViolations":15,"date":"Ahora"},{"name":"Versión 19","score":30,"hardViolations":0,"softViolations":10,"date":"Ahora"},{"name":"Versión 18","score":30,"hardViolations":0,"softViolations":13,"date":"Ahora"},{"name":"Versión 17","score":30,"hardViolations":0,"softViolations":14,"date":"Ahora"},{"name":"Versión 16","score":30,"hardViolations":0,"softViolations":22,"date":"Ahora"},{"name":"Versión 15","score":30,"hardViolations":0,"softViolations":14,"date":"Ahora"},{"name":"Versión 14","score":30,"hardViolations":0,"softViolations":14,"date":"Ahora"},{"name":"Versión 13","score":30,"hardViolations":0,"softViolations":13,"date":"Ahora"},{"name":"Versión 12","score":30,"hardViolations":0,"softViolations":14,"date":"Ahora"},{"name":"Versión 11","score":30,"hardViolations":0,"softViolations":13,"date":"Ahora"},{"name":"Versión 10","score":30,"hardViolations":0,"softViolations":12,"date":"Ahora"},{"name":"Versión 9","score":44,"hardViolations":0,"softViolations":7,"date":"Ahora"},{"name":"Versión 8","score":30,"hardViolations":0,"softViolations":47,"date":"Ahora"},{"name":"Versión 7","score":30,"hardViolations":0,"softViolations":30,"date":"Ahora"},{"name":"Versión 6","score":30,"hardViolations":0,"softViolations":47,"date":"Ahora"},{"name":"Versión 5","score":36,"hardViolations":0,"softViolations":8,"date":"Ahora"},{"name":"Versión 4","score":30,"hardViolations":0,"softViolations":10,"date":"Ahora"},{"name":"Versión 3","score":30,"hardViolations":0,"softViolations":9,"date":"Ahora"},{"name":"Versión 2","score":44,"hardViolations":0,"softViolations":7,"date":"Ahora"},{"name":"Versión 1","score":82,"hardViolations":0,"softViolations":2,"date":"Ahora"}],"slots":[{"n":1,"time":"09:00–09:50","label":"1ª sesión","type":"class","recess":false},{"n":2,"time":"09:50–10:40","label":"2ª sesión","type":"class","recess":false},{"n":3,"time":"10:40–11:30","label":"3ª sesión","type":"class","recess":false},{"n":4,"time":"11:30–11:55","label":"Recreo","type":"recess","recess":true},{"n":5,"time":"11:55–12:20","label":"Hora de Leer","type":"reading","recess":true},{"n":6,"time":"12:20–13:10","label":"4ª sesión","type":"class","recess":false},{"n":7,"time":"13:10–14:00","label":"5ª sesión","type":"class","recess":false},{"n":8,"time":"14:00–15:00","label":"Comedor","type":"lunch","recess":true},{"n":9,"time":"15:00–16:00","label":"Guardia Biblioteca","type":"library","recess":true}],"recess":{"primaria":{"1":["Cris Meijome","Diego","Noelia","Ada","Richi","María Prieto"],"2":["Montse","Bea R","Arancha Inglés","Bea AL","Caty","Silvia López"],"3":["Mikel","Ana Armesto","Oscar","María4º","Ana Jato","Isa"],"4":["Noelia","Ada","Isa","Silvia López","Oscar","Cris Meijome"],"5":["Caty","Bea R","Arancha Inglés","Ana Jato","María Prieto","Montse"]},"infantil":{"1":["Silvia Inf","Isa","Goretti"],"2":["Cristina","Goretti","Isa"],"3":["Silvia Inf","Cristina","Isa"],"4":["Silvia Inf","Goretti","Cristina"],"5":["Goretti","Silvia Inf","Cristina"]}}};
+  const lsKey="ceip_monforte_v8";
+  // Guardar referencia maestra para restaurar después de Firebase
+  window._PRELOAD_MASTER=PRELOAD;
+  // Borrar TODO el localStorage sin excepción — garantiza carga limpia
+  Object.keys(localStorage).forEach(k=>localStorage.removeItem(k));
+  // Cargar siempre desde preload
+  Object.keys(PRELOAD).forEach(k=>{ if(k in S) S[k]=PRELOAD[k]; });
 })();
 
 function bootApp(){
