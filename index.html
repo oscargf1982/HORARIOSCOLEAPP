@@ -441,6 +441,7 @@ const S={
   curriculum:{},
   constraints:[],
   schedule:{},
+  teacherFunctions:{},
   activeVersion:null,
   versions:[],
   slots:[
@@ -2147,13 +2148,18 @@ function pgGenerator(c){
       const cur=S.curriculum[g.id]||[];
       const sessions=cur.reduce((s,e)=>s+e.sessions,0);
       if(sessions===0) return;
-      // Contar franjas "bloqueadas" por no-disponibilidades de especialistas
-      let blockedSlots=0;
+      // Contar franjas ÚNICAS donde algún especialista del grupo no puede venir
+      // (antes se sumaban las libranzas de cada especialista por separado,
+      //  lo que daba números imposibles >25)
+      const blockedSet=new Set();
       cur.forEach(e=>{
-        if(!e.tid) return;
+        if(!e.tid||e.tid===g.tutorId) return; // solo especialistas, no el tutor
         const t=S.teachers.find(t=>t.id===e.tid);
-        blockedSlots+=(t?.unavail||[]).filter(u=>classSlots.includes(u.s)).length;
+        (t?.unavail||[]).filter(u=>classSlots.includes(u.s)).forEach(u=>{
+          blockedSet.add(`${u.d}-${u.s}`);
+        });
       });
+      const blockedSlots=blockedSet.size;
       const effective=classSlots.length*5;
       const pressure=sessions/effective;
       if(pressure>0.85||blockedSlots>3) items.push({type:'group',name:g.name,sessions,available:effective,pressure,blockedSlots,color:'#0ea5e9'});
@@ -2206,7 +2212,7 @@ function pgGenerator(c){
             </div>
             ${pressureBar(b.pressure)}
             ${b.type==='teacher'&&b.nGroups>4?`<div style="font-size:9px;color:#fbbf24;margin-top:2px">⚠ ${b.nGroups} grupos — muy repartido</div>`:''}
-            ${b.type==='group'&&b.blockedSlots>3?`<div style="font-size:9px;color:#fbbf24;margin-top:2px">⚠ ${b.blockedSlots} franjas bloqueadas por especialistas</div>`:''}
+            ${b.type==='group'&&b.blockedSlots>3?`<div style="font-size:9px;color:#fbbf24;margin-top:2px">⚠ ${b.blockedSlots} de 25 franjas con algún especialista no disponible</div>`:''}
           </div>`).join("")}
         </div>`:``}
 
@@ -3110,106 +3116,210 @@ function runGenEngine(){
       tasks.forEach(t=>{ t._placed=false; });
       placed=0; skipped=0; conflicts=[];
 
+      // ── FASE REL/PC (1): grupos donde PC NO lo da el tutor ───────
+      // En 1ºA(Bea AL), 1ºB(Ana Armesto), 5ºB(Caty), 6ºA(Caty) el Proyecto
+      // Competencial lo imparte un profesor que NO es el tutor. Estos son
+      // los más rígidos (el profesor de PC tiene su propia carga), así que
+      // se colocan PRIMERO. Elba va en paralelo (t2) en la misma franja.
+      if(elbaId){
+        const relNoTutor=[];
+        primGroups.forEach(g=>{
+          (S.curriculum[g.id]||[]).forEach(e=>{
+            const code=S.subjects.find(s=>s.id===e.sid)?.code;
+            if(code==="REL"&&e.tid!==elbaId&&e.sessions>0&&e.tid!==g.tutorId){
+              relNoTutor.push({gname:g.name,pcTid:e.tid,gid:g.id});
+            }
+          });
+        });
+        // Colocar cada uno en una franja donde grupo+PC+Elba estén libres
+        // MRV: el de menos opciones primero
+        function relOpts(rt){
+          const opts=[];
+          DAYS_N.forEach(day=>lectSlots.forEach(slot=>{
+            if(sched[rt.gname][day]?.[slot]) return;
+            if(teacherBusy[elbaId][day][slot]) return;
+            if(rt.pcTid&&teacherBusy[rt.pcTid][day][slot]) return;
+            if(violatesSharedSpace(rt.gname,"REL",day,slot)) return;
+            opts.push({day,slot});
+          }));
+          return opts;
+        }
+        relNoTutor.sort((a,b)=>relOpts(a).length-relOpts(b).length);
+        relNoTutor.forEach(rt=>{
+          const opts=relOpts(rt);
+          if(opts.length===0) return;
+          const {day,slot}=opts[Math.floor(Math.random()*Math.min(opts.length,3))];
+          sched[rt.gname][day][slot]={s:"REL",t:rt.pcTid,t2:elbaId,parallel:true};
+          teacherBusy[elbaId][day][slot]=true;
+          if(rt.pcTid) teacherBusy[rt.pcTid][day][slot]=true;
+          // Marcar tareas colocadas
+          const pcTask=tasks.find(t=>t.gname===rt.gname&&t.code==="REL"&&t.tid===rt.pcTid);
+          if(pcTask&&!pcTask._placed){ pcTask._placed=true; placed+=pcTask.sessions; }
+          const elbaTask=tasks.find(t=>t.gname===rt.gname&&t.code==="REL"&&t.tid===elbaId);
+          if(elbaTask&&!elbaTask._placed){ elbaTask._placed=true; placed+=elbaTask.sessions; }
+        });
+
+        // Excluir del motor las tareas REL de grupos con PC TUTOR
+        // (se colocarán en la fase 2 al final, con flexibilidad).
+        // Se marcan _placed para que el motor las salte, pero NO se suman
+        // a 'placed' aquí — la fase 2 las coloca realmente.
+        primGroups.forEach(g=>{
+          (S.curriculum[g.id]||[]).forEach(e=>{
+            const code=S.subjects.find(s=>s.id===e.sid)?.code;
+            if(code==="REL"&&e.sessions>0&&(e.tid===g.tutorId||e.tid===elbaId)){
+              const task=tasks.find(t=>t.gname===g.name&&t.code==="REL"&&t.tid===e.tid&&!t._placed);
+              if(task){ task._placed=true; placed+=task.sessions; }
+            }
+          });
+        });
+      }
+
       // ── OPCIÓN C: COLOCACIÓN GLOBAL DE ESPECIALISTAS CRÍTICOS ──────
       // Oscar, Richi, Diego, Arancha tienen muchos grupos y pocas franjas.
       // Resolver su asignación completa mediante backtracking ANTES del
       // motor general garantiza que si existe solución, la encuentra.
       // Para Arancha solo las sesiones CROSS-GROUP (LEX fuera de 1ºB),
       // sus sesiones en su propio grupo 1ºB son más flexibles.
-      const criticalSpecialists=["Oscar","Richi","Diego","Arancha Inglés"];
+      //
+      // OPCIÓN 1 (reintento): como cada especialista se resuelve en
+      // secuencia, el orden puede causar que el último no encaje. Si algún
+      // especialista falla, se reintenta con distintos órdenes hasta que
+      // los 4 encajen (o se agoten los órdenes).
+      const baseSpecialists=["Oscar","Richi","Diego","Arancha Inglés"];
       const placedGlobal=new Set();
 
-      for(const specName of criticalSpecialists){
-        const spec=S.teachers.find(t=>t.name===specName);
-        if(!spec) continue;
-        const specId=spec.id;
-        const ownGroup=primGroups.find(g=>g.tutorId===specId);
+      // Generar varios órdenes a probar: original + permutaciones aleatorias
+      function shuffleArr(a){const r=[...a];for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]];}return r;}
+      const ordersToTry=[baseSpecialists];
+      // Menos permutaciones para no ralentizar (el primer orden suele bastar)
+      const numPerms=4;
+      for(let k=0;k<numPerms;k++) ordersToTry.push(shuffleArr(baseSpecialists));
 
-        // Recolectar sesiones. Para Arancha solo cross-group.
-        const specSessions=[];
-        const includedTasks=new Set();
-        tasks.forEach(task=>{
-          if(task.tid!==specId) return;
-          // Arancha: solo sesiones fuera de su grupo (cross-group)
-          if(specName==="Arancha Inglés"&&ownGroup&&task.gname===ownGroup.name) return;
-          for(let i=0;i<task.sessions;i++){
-            specSessions.push({gname:task.gname,code:task.code,task});
-          }
-          includedTasks.add(task);
+      // Snapshot del estado para poder revertir entre intentos de orden
+      function snapshotSched(){
+        const snap={};
+        primGroups.forEach(g=>{ snap[g.name]={}; DAYS_N.forEach(d=>{ snap[g.name][d]={...(sched[g.name][d]||{})}; }); });
+        return snap;
+      }
+      function restoreSched(snap){
+        primGroups.forEach(g=>{ DAYS_N.forEach(d=>{ sched[g.name][d]={...(snap[g.name][d]||{})}; }); });
+      }
+      function snapshotBusy(){
+        const snap={};
+        baseSpecialists.forEach(name=>{
+          const sp=S.teachers.find(t=>t.name===name); if(!sp) return;
+          snap[sp.id]={}; DAYS_N.forEach(d=>{ snap[sp.id][d]={...(teacherBusy[sp.id][d]||{})}; });
         });
-        if(specSessions.length===0) continue;
+        return snap;
+      }
+      function restoreBusy(snap){
+        Object.keys(snap).forEach(tid=>{ DAYS_N.forEach(d=>{ teacherBusy[tid][d]={...(snap[tid][d]||{})}; }); });
+      }
 
-        // Backtracking: asignar cada sesión a una (día,slot) válida
-        // sin que dos sesiones del mismo especialista coincidan en franja
-        // ni dos sesiones del mismo grupo coincidan
-        const assignment=[]; // {gname,code,day,slot}
-        const usedSpecSlots=new Set(); // "day-slot" del especialista
-        const usedGroupSlots=new Set(); // "gname-day-slot"
+      const schedSnap0=snapshotSched();
+      const busySnap0=snapshotBusy();
 
-        function slotValid(gname,code,day,slot){
-          if(teacherBusy[specId][day][slot]) return false; // libranza u ocupado
-          if(usedSpecSlots.has(`${day}-${slot}`)) return false;
-          if(usedGroupSlots.has(`${gname}-${day}-${slot}`)) return false;
-          if(sched[gname][day]?.[slot]) return false; // ya ocupado (infantil/preplaced)
-          if(violatesSharedSpace(gname,code,day,slot)) return false;
-          // No más de 1 sesión del mismo grupo+materia por día
-          const sameDayCount=assignment.filter(a=>a.gname===gname&&a.code===code&&a.day===day).length;
-          if(sameDayCount>=1) return false;
-          return true;
-        }
+      let bestOrderResult=null; // {placedGlobal, schedSnap, busySnap, failCount}
 
-        // Ordenar sesiones por grupo más restringido primero (MRV real)
-        function countOptions(gname,code){
-          let n=0;
-          DAYS_N.forEach(day=>lectSlots.forEach(slot=>{
-            if(slotValid(gname,code,day,slot)) n++;
-          }));
-          return n;
-        }
+      for(const order of ordersToTry){
+        // Restaurar estado inicial antes de cada intento de orden
+        restoreSched(schedSnap0);
+        restoreBusy(busySnap0);
+        const orderPlaced=new Set();
+        let failCount=0;
 
-        let solved=false;
-        let btSteps=0;
-        const BT_MAX=50000;
-        function backtrack(idx){
-          if(++btSteps>BT_MAX) return false;
-          if(idx>=specSessions.length){ solved=true; return true; }
-          // Reordenar sesiones restantes por nº de opciones (MRV)
-          const remaining=specSessions.slice(idx);
-          remaining.sort((a,b)=>countOptions(a.gname,a.code)-countOptions(b.gname,b.code));
-          specSessions.splice(idx,remaining.length,...remaining);
+        for(const specName of order){
+          const spec=S.teachers.find(t=>t.name===specName);
+          if(!spec) continue;
+          const specId=spec.id;
+          const ownGroup=primGroups.find(g=>g.tutorId===specId);
 
-          const {gname,code}=specSessions[idx];
-          // Generar franjas válidas, barajadas para variedad entre reinicios
-          const opts=[];
-          DAYS_N.forEach(day=>lectSlots.forEach(slot=>{
-            if(slotValid(gname,code,day,slot)) opts.push({day,slot});
-          }));
-          opts.sort(()=>Math.random()-0.5);
-
-          for(const {day,slot} of opts){
-            assignment.push({gname,code,day,slot});
-            usedSpecSlots.add(`${day}-${slot}`);
-            usedGroupSlots.add(`${gname}-${day}-${slot}`);
-            if(backtrack(idx+1)) return true;
-            assignment.pop();
-            usedSpecSlots.delete(`${day}-${slot}`);
-            usedGroupSlots.delete(`${gname}-${day}-${slot}`);
-          }
-          return false;
-        }
-
-        backtrack(0);
-
-        // Aplicar la asignación encontrada
-        if(solved){
-          assignment.forEach(a=>{
-            sched[a.gname][a.day][a.slot]={s:a.code,t:specId};
-            teacherBusy[specId][a.day][a.slot]=true;
-            usedGroupSlots.add(`${a.gname}-${a.day}-${a.slot}`);
+          const specSessions=[];
+          const includedTasks=new Set();
+          tasks.forEach(task=>{
+            if(task.tid!==specId) return;
+            if(specName==="Arancha Inglés"&&ownGroup&&task.gname===ownGroup.name) return;
+            for(let i=0;i<task.sessions;i++){
+              specSessions.push({gname:task.gname,code:task.code,task});
+            }
+            includedTasks.add(task);
           });
-          // Marcar SOLO las tasks incluidas en el backtracking como colocadas
-          includedTasks.forEach(task=>placedGlobal.add(task));
+          if(specSessions.length===0) continue;
+
+          const assignment=[];
+          const usedSpecSlots=new Set();
+          const usedGroupSlots=new Set();
+
+          function slotValid(gname,code,day,slot){
+            if(teacherBusy[specId][day][slot]) return false;
+            if(usedSpecSlots.has(`${day}-${slot}`)) return false;
+            if(usedGroupSlots.has(`${gname}-${day}-${slot}`)) return false;
+            if(sched[gname][day]?.[slot]) return false;
+            if(violatesSharedSpace(gname,code,day,slot)) return false;
+            const sameDayCount=assignment.filter(a=>a.gname===gname&&a.code===code&&a.day===day).length;
+            if(sameDayCount>=1) return false;
+            return true;
+          }
+          function countOptions(gname,code){
+            let n=0;
+            DAYS_N.forEach(day=>lectSlots.forEach(slot=>{ if(slotValid(gname,code,day,slot)) n++; }));
+            return n;
+          }
+
+          let solved=false;
+          let btSteps=0;
+          const BT_MAX=50000;
+          function backtrack(idx){
+            if(++btSteps>BT_MAX) return false;
+            if(idx>=specSessions.length){ solved=true; return true; }
+            const remaining=specSessions.slice(idx);
+            remaining.sort((a,b)=>countOptions(a.gname,a.code)-countOptions(b.gname,b.code));
+            specSessions.splice(idx,remaining.length,...remaining);
+            const {gname,code}=specSessions[idx];
+            const opts=[];
+            DAYS_N.forEach(day=>lectSlots.forEach(slot=>{ if(slotValid(gname,code,day,slot)) opts.push({day,slot}); }));
+            opts.sort(()=>Math.random()-0.5);
+            for(const {day,slot} of opts){
+              assignment.push({gname,code,day,slot});
+              usedSpecSlots.add(`${day}-${slot}`);
+              usedGroupSlots.add(`${gname}-${day}-${slot}`);
+              if(backtrack(idx+1)) return true;
+              assignment.pop();
+              usedSpecSlots.delete(`${day}-${slot}`);
+              usedGroupSlots.delete(`${gname}-${day}-${slot}`);
+            }
+            return false;
+          }
+
+          backtrack(0);
+
+          if(solved){
+            assignment.forEach(a=>{
+              sched[a.gname][a.day][a.slot]={s:a.code,t:specId};
+              teacherBusy[specId][a.day][a.slot]=true;
+            });
+            includedTasks.forEach(task=>orderPlaced.add(task));
+          } else {
+            failCount++;
+          }
         }
+
+        // Si este orden colocó los 4 sin fallos, lo usamos directamente
+        if(failCount===0){
+          bestOrderResult={placedGlobal:orderPlaced,schedSnap:snapshotSched(),busySnap:snapshotBusy(),failCount:0};
+          break;
+        }
+        // Si no, guardar el mejor hasta ahora (menos fallos)
+        if(!bestOrderResult||failCount<bestOrderResult.failCount){
+          bestOrderResult={placedGlobal:orderPlaced,schedSnap:snapshotSched(),busySnap:snapshotBusy(),failCount};
+        }
+      }
+
+      // Aplicar el mejor resultado encontrado
+      if(bestOrderResult){
+        restoreSched(bestOrderResult.schedSnap);
+        restoreBusy(bestOrderResult.busySnap);
+        bestOrderResult.placedGlobal.forEach(t=>placedGlobal.add(t));
       }
 
       // Marcar como colocadas las tareas resueltas globalmente
@@ -3288,46 +3398,6 @@ function runGenEngine(){
     // Guardar primaria
     primGroups.forEach(g=>{ S.schedule[g.name]=sched[g.name]; });
 
-    // ── FASE ELBA: desdoble Religión↔PC en primaria ──────────────
-    // Elba debe ir en la MISMA franja que el profesor de PC de cada grupo.
-    // Recorre los 12 grupos de primaria y añade Elba (t2) en la celda REL.
-    if(elbaId){
-      // Reconstruir ocupación de Elba desde infantil (fase 1)
-      const elbaBusy={}; DAYS_N.forEach(d=>{ elbaBusy[d]={}; });
-      (S.teachers.find(t=>t.id===elbaId)?.unavail||[]).forEach(u=>{ elbaBusy[u.d][u.s]=true; });
-      // Marcar franjas de Elba ya usadas en infantil
-      infGroups.forEach(g=>{
-        DAYS_N.forEach(day=>lectSlots.forEach(slot=>{
-          const cell=S.schedule[g.name]?.[day]?.[slot]||S.schedule[g.name]?.[String(day)]?.[String(slot)];
-          if(cell&&(cell.t===elbaId||cell.t2===elbaId)) elbaBusy[day][slot]=true;
-        }));
-      });
-      let elbaPlaced=0, elbaFailed=[];
-      primGroups.forEach(g=>{
-        // Buscar la celda REL del PC en este grupo
-        let relCell=null,relDay=null,relSlot=null;
-        DAYS_N.forEach(day=>lectSlots.forEach(slot=>{
-          const cell=S.schedule[g.name]?.[day]?.[slot];
-          if(cell?.s==="REL"&&cell.t!==elbaId&&!cell.t2){ relCell=cell; relDay=day; relSlot=slot; }
-        }));
-        if(relCell){
-          if(!elbaBusy[relDay][relSlot]){
-            relCell.t2=elbaId; relCell.parallel=true;
-            elbaBusy[relDay][relSlot]=true;
-            elbaPlaced++;
-          } else {
-            elbaFailed.push(`${g.name} (Elba ocupada ${DAYS[relDay-1]}${slot_labels[relSlot]})`);
-          }
-        } else {
-          elbaFailed.push(`${g.name} (sin celda REL/PC)`);
-        }
-      });
-      const el=document.createElement("div");
-      el.style.color=elbaPlaced===primGroups.length?"#4ade80":"#fbbf24";
-      el.textContent=`⛪ Elba desdoble: ${elbaPlaced}/${primGroups.length} grupos`+(elbaFailed.length?` — falló: ${elbaFailed.join(", ")}`:"");
-      $("glog").appendChild(el); $("glog").scrollTop=$("glog").scrollHeight;
-    }
-
     // ── FASE 3+4: Completar infantil ─────────────────────────────
     if(infGroups.length>0){
       // Añadir log visible
@@ -3379,6 +3449,21 @@ function runGenEngine(){
               sched[g.name][day][slot]={s:code,t:e.tid};
               if(e.tid) teacherBusy[e.tid][day][slot]=true;
               dc[day]++; remaining--;
+            }
+          }
+          // PASADA GARANTIZADA: si aún quedan, colocar en cualquier hueco
+          // donde el especialista esté libre, sin límite por día
+          if(remaining>0){
+            for(const day of DAYS_N){
+              if(remaining<=0) break;
+              for(const slot of lectSlots){
+                if(remaining<=0) break;
+                if(sched[g.name][day]?.[slot]) continue;
+                if(e.tid&&teacherBusy[e.tid]?.[day]?.[slot]) continue;
+                sched[g.name][day][slot]={s:code,t:e.tid};
+                if(e.tid) teacherBusy[e.tid][day][slot]=true;
+                remaining--;
+              }
             }
           }
         });
@@ -3453,6 +3538,67 @@ function runGenEngine(){
       il.style.color=ip>=it?"#4ade80":"#fbbf24";
       il.textContent=ip>=it?`✅ Infantil completo — ${ip} ses.`:`⚠ Infantil: ${ip}/${it}`;
       $("glog").appendChild(il); $("glog").scrollTop=$("glog").scrollHeight;
+    }
+
+    // ── FASE REL/PC (2): grupos donde PC lo da el TUTOR ──────────
+    // En el resto de grupos, el Proyecto Competencial lo imparte el tutor,
+    // que está casi siempre en su aula. Por eso se colocan AL FINAL, con
+    // toda la flexibilidad: Elba va en cualquier franja libre del grupo
+    // donde Elba esté libre, y el tutor da PC en esa misma franja.
+    if(elbaId){
+      let elbaPlaced=0, elbaFailed=[];
+      // Ocupación actual de Elba (primaria fase 1 + infantil)
+      const elbaBusy={}; DAYS_N.forEach(d=>{ elbaBusy[d]={}; });
+      (S.teachers.find(t=>t.id===elbaId)?.unavail||[]).forEach(u=>{ if(elbaBusy[u.d]) elbaBusy[u.d][u.s]=true; });
+      [...primGroups,...infGroups].forEach(g=>{
+        DAYS_N.forEach(day=>lectSlots.forEach(slot=>{
+          const cell=S.schedule[g.name]?.[day]?.[slot]||S.schedule[g.name]?.[String(day)]?.[String(slot)];
+          if(cell&&(cell.t===elbaId||cell.t2===elbaId)) elbaBusy[day][slot]=true;
+        }));
+      });
+
+      primGroups.forEach(g=>{
+        // ¿Ya tiene REL este grupo? (colocado en fase 1) → saltar
+        let hasRel=false;
+        DAYS_N.forEach(day=>lectSlots.forEach(slot=>{
+          const c=S.schedule[g.name]?.[day]?.[slot];
+          if(c?.s==="REL") hasRel=true;
+        }));
+        if(hasRel) return;
+
+        // PC lo da el tutor en este grupo
+        const tutorId=g.tutorId;
+        // Buscar franja libre en el grupo donde Elba y el tutor estén libres
+        const opts=[];
+        DAYS_N.forEach(day=>lectSlots.forEach(slot=>{
+          if(S.schedule[g.name]?.[day]?.[slot]) return; // grupo ocupado
+          if(elbaBusy[day]?.[slot]) return; // Elba ocupada
+          // tutor: ¿está en su aula o libre? Comprobar que no esté en otro grupo
+          let tutorBusy=false;
+          [...primGroups,...infGroups].forEach(g2=>{
+            const c=S.schedule[g2.name]?.[day]?.[slot];
+            if(c&&(c.t===tutorId||c.t2===tutorId)) tutorBusy=true;
+          });
+          if(tutorBusy) return;
+          if((S.teachers.find(t=>t.id===tutorId)?.unavail||[]).some(u=>u.d===day&&u.s===slot)) return;
+          if(violatesSharedSpace(g.name,"REL",day,slot)) return;
+          opts.push({day,slot});
+        }));
+        if(opts.length>0){
+          const {day,slot}=opts[Math.floor(Math.random()*opts.length)];
+          if(!S.schedule[g.name][day]) S.schedule[g.name][day]={};
+          S.schedule[g.name][day][slot]={s:"REL",t:tutorId,t2:elbaId,parallel:true};
+          elbaBusy[day][slot]=true;
+          elbaPlaced++;
+        } else {
+          elbaFailed.push(g.name);
+        }
+      });
+
+      const el=document.createElement("div");
+      el.style.color=elbaFailed.length===0?"#4ade80":"#fbbf24";
+      el.textContent=`⛪ Elba REL/PC (tutor): ${elbaPlaced} grupos`+(elbaFailed.length?` — sin colocar: ${elbaFailed.join(", ")}`:"");
+      $("glog").appendChild(el); $("glog").scrollTop=$("glog").scrollHeight;
     }
 
     const elapsed=Date.now()-t0;
@@ -3962,6 +4108,7 @@ function pgSchedule(c){
     <div class="tabs"><button class="tbtn ${svMode==="group"?"on":""}" onclick="svMode='group';pgSchedule($('ct'))">Por grupo</button><button class="tbtn ${svMode==="teacher"?"on":""}" onclick="svMode='teacher';pgSchedule($('ct'))">Por profesor</button><button class="tbtn ${svMode==="recess"?"on":""}" onclick="svMode='recess';pgSchedule($('ct'))">Recreos</button></div>
     <button class="btn bp2 bsm" onclick="${svMode==="group"?"printGroupSchedule()":"printTeacherSchedule()"}">🖨️ Imprimir</button>
     <button class="btn bo bsm" onclick="navigate('generator')">⚡ Regenerar</button>
+    <button class="btn bsm" style="background:#7c3aed;color:#fff;border:none" onclick="completarFaltantes()">🧩 Completar lo que falta</button>
     <button class="btn bsm" style="background:#16a34a;color:#fff;border:none" onclick="downloadAllSchedules()">📥 Descargar todos</button>
   </div></div>
   <div style="display:flex;gap:5px;margin-bottom:11px;flex-wrap:wrap">
@@ -4030,10 +4177,181 @@ function doManualPlace(gname,day,slot,val){
   if(!code||!tid) return;
   if(!S.schedule[gname]) S.schedule[gname]={};
   if(!S.schedule[gname][day]) S.schedule[gname][day]={};
-  S.schedule[gname][day][slot]={s:code,t:tid};
+  const g=S.groups.find(g=>g.name===gname);
+  const elbaId=S.teachers.find(t=>t.name==="Elba")?.id||null;
+
+  if(code==="REL"){
+    // El desdoble REL/PC son DOS profesores en la MISMA celda:
+    // el profesor de PC (t) y Elba (t2). Identificar ambos desde curriculum.
+    let pcTid=null;
+    (S.curriculum[g?.id]||[]).forEach(e=>{
+      const c=S.subjects.find(s=>s.id===e.sid)?.code;
+      if(c==="REL"&&e.tid!==elbaId) pcTid=e.tid;
+    });
+    // Colocar PC + Elba juntos en la celda clicada
+    S.schedule[gname][day][slot]={s:"REL",t:pcTid||tid,t2:elbaId,parallel:true};
+  } else {
+    S.schedule[gname][day][slot]={s:code,t:tid};
+  }
   S.schedule[gname][String(day)]=S.schedule[gname][day];
   save(); pgSchedule($('ct'));
   toast(`✅ ${code} colocado en ${gname} manualmente`);
+}
+
+// ── FUNCIONES DEL PROFESORADO (guardia/apoyo, coord, dirección) ────
+function getTchFunction(tid,day,slot){
+  return S.teacherFunctions?.[tid]?.[`${day}-${slot}`]||null;
+}
+function assignTeacherFunction(tid,day,slot){
+  const current=getTchFunction(tid,day,slot);
+  const opciones=["Garda/Apoio","Coordinación","Equipo directivo","(quitar)"];
+  const DAYS=["Lun","Mar","Mié","Jue","Vie"];
+  const slbl={1:"1ª",2:"2ª",3:"3ª",6:"4ª",7:"5ª"};
+  const mb=document.createElement('div');
+  mb.className='mb-overlay';
+  mb.innerHTML=`<div class="mb" style="max-width:320px">
+    <div style="font-size:14px;font-weight:800;color:var(--tx);margin-bottom:12px">
+      Asignar función — ${gt(tid)?.name||""} · ${DAYS[day-1]} ${slbl[slot]||slot}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:7px">
+      ${opciones.map(op=>`<button class="btn ${op===current?'bg2':''}" style="text-align:left"
+        onclick="setTeacherFunction('${tid}','${day}','${slot}','${op}');this.closest('.mb-overlay').remove()">${op==='(quitar)'?'🗑️ Quitar':op}</button>`).join("")}
+    </div>
+    <div style="margin-top:12px;text-align:right">
+      <button class="btn" onclick="this.closest('.mb-overlay').remove()">Cancelar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(mb);
+  mb.addEventListener('click',e=>{ if(e.target===mb) mb.remove(); });
+}
+function setTeacherFunction(tid,day,slot,label){
+  if(!S.teacherFunctions) S.teacherFunctions={};
+  if(!S.teacherFunctions[tid]) S.teacherFunctions[tid]={};
+  const key=`${day}-${slot}`;
+  if(label==="(quitar)") delete S.teacherFunctions[tid][key];
+  else S.teacherFunctions[tid][key]=label;
+  save(); pgSchedule($('ct'));
+}
+
+// ── COMPLETAR LO QUE FALTA (Variante A) ────────────────────────────
+// Toma el horario actual COMO ESTÁ (respeta todo: motor + cambios
+// manuales) y solo intenta colocar las sesiones que aún faltan, en
+// huecos libres donde el profesor esté disponible. No mueve nada.
+function completarFaltantes(){
+  const DAYS_N=[1,2,3,4,5];
+  const lectSlots=S.slots.filter(s=>s.type==="class").map(s=>s.n);
+  const DAYS=["Lun","Mar","Mié","Jue","Vie"];
+  const slot_labels={1:"1ª",2:"2ª",3:"3ª",6:"4ª",7:"5ª"};
+  const elbaId=S.teachers.find(t=>t.name==="Elba")?.id||null;
+
+  function getCell(gname,day,slot){
+    return S.schedule[gname]?.[day]?.[slot]||S.schedule[gname]?.[String(day)]?.[String(slot)];
+  }
+
+  // Reconstruir ocupación de cada profesor desde el horario actual
+  const teacherBusy={};
+  S.teachers.forEach(t=>{
+    teacherBusy[t.id]={}; DAYS_N.forEach(d=>{ teacherBusy[t.id][d]={}; });
+    (t.unavail||[]).forEach(u=>{ teacherBusy[t.id][u.d][u.s]=true; });
+  });
+  S.groups.forEach(g=>{
+    DAYS_N.forEach(day=>lectSlots.forEach(slot=>{
+      const c=getCell(g.name,day,slot);
+      if(c?.t) teacherBusy[c.t][day][slot]=true;
+      if(c?.t2) teacherBusy[c.t2][day][slot]=true;
+    }));
+  });
+
+  // Función para colocar sesiones pendientes de un grupo
+  let totalPlaced=0, stillMissing=[];
+  S.groups.forEach(g=>{
+    if(!S.schedule[g.name]) S.schedule[g.name]={};
+    DAYS_N.forEach(d=>{ if(!S.schedule[g.name][d]) S.schedule[g.name][d]={}; });
+
+    (S.curriculum[g.id]||[]).forEach(e=>{
+      const code=S.subjects.find(s=>s.id===e.sid)?.code||"???";
+      const tid=e.tid;
+      // Contar sesiones ya colocadas de este (code,tid) en el grupo
+      let got=0;
+      DAYS_N.forEach(day=>lectSlots.forEach(slot=>{
+        const c=getCell(g.name,day,slot);
+        if(c&&c.s===code&&(c.t===tid||c.t2===tid)) got++;
+      }));
+      let missing=e.sessions-got;
+      if(missing<=0) return;
+
+      // Caso especial Elba (REL): debe ir en la franja del PC (desdoble)
+      if(tid===elbaId&&code==="REL"){
+        for(let day=1;day<=5&&missing>0;day++){
+          for(const slot of lectSlots){
+            if(missing<=0) break;
+            const c=getCell(g.name,day,slot);
+            // Hay REL del PC sin Elba (t2 vacío) y Elba libre
+            if(c&&c.s==="REL"&&c.t!==elbaId&&!c.t2&&!teacherBusy[elbaId][day][slot]){
+              c.t2=elbaId; c.parallel=true;
+              teacherBusy[elbaId][day][slot]=true;
+              missing--; totalPlaced++;
+            }
+          }
+        }
+        if(missing>0) stillMissing.push(`${g.name}/${code}/${gt(tid)?.name||"?"} (${missing})`);
+        return;
+      }
+
+      // Colocación normal en hueco libre
+      for(let day=1;day<=5&&missing>0;day++){
+        for(const slot of lectSlots){
+          if(missing<=0) break;
+          if(getCell(g.name,day,slot)) continue;           // hueco ocupado
+          if(tid&&teacherBusy[tid][day][slot]) continue;    // profesor ocupado
+          S.schedule[g.name][day][slot]={s:code,t:tid};
+          if(tid) teacherBusy[tid][day][slot]=true;
+          missing--; totalPlaced++;
+        }
+      }
+      if(missing>0) stillMissing.push(`${g.name}/${code}/${gt(tid)?.name||"?"} (${missing})`);
+    });
+  });
+
+  // ── Completar INFANTIL: huecos vacíos → tutor (GLOB) ─────────────
+  // En infantil, las franjas que no son de especialista las cubre el tutor.
+  // Se rellena CUALQUIER hueco vacío con el tutor, salvo en su libranza real.
+  const infGroups=S.groups.filter(g=>g.level==="infantil");
+  let infFilled=0;
+  infGroups.forEach(g=>{
+    const tutorId=g.tutorId;
+    if(!tutorId) return;
+    const tutor=S.teachers.find(t=>t.id===tutorId);
+    const tutorUnavail=new Set((tutor?.unavail||[]).map(u=>`${u.d}-${u.s}`));
+    let globCode="GLOB";
+    const te=(S.curriculum[g.id]||[]).find(e=>e.tid===tutorId);
+    if(te) globCode=S.subjects.find(s=>s.id===te.sid)?.code||"GLOB";
+    DAYS_N.forEach(day=>lectSlots.forEach(slot=>{
+      if(getCell(g.name,day,slot)) return;                  // ya ocupado
+      if(tutorUnavail.has(`${day}-${slot}`)) return;         // libranza real del tutor
+      // ¿El tutor está dando clase en OTRO grupo en esta franja? (raro en infantil)
+      let elsewhere=false;
+      S.groups.forEach(g2=>{
+        if(g2.name===g.name) return;
+        const c=getCell(g2.name,day,slot);
+        if(c&&(c.t===tutorId||c.t2===tutorId)) elsewhere=true;
+      });
+      if(elsewhere) return;
+      if(!S.schedule[g.name][day]) S.schedule[g.name][day]={};
+      S.schedule[g.name][day][slot]={s:globCode,t:tutorId};
+      S.schedule[g.name][String(day)]=S.schedule[g.name][day];
+      infFilled++; totalPlaced++;
+    }));
+  });
+
+  save(); pgSchedule($('ct'));
+  if(totalPlaced===0&&stillMissing.length===0){
+    toast("✅ El horario ya está completo, no falta nada");
+  } else if(stillMissing.length===0){
+    toast(`✅ ${totalPlaced} sesiones colocadas — horario completo`);
+  } else {
+    toast(`Colocadas ${totalPlaced}. Aún faltan (sin hueco libre): ${stillMissing.join(", ")}`,"warn");
+  }
 }
 
 function drawSG(){
@@ -4125,6 +4443,12 @@ function drawSG(){
         const sub=ses?S.subjects.find(s=>s.code===ses.s):null;
         const tch=ses?gt(ses.t):null;
         const cid=`c${d}-${sl.n}`;
+        // En vista profesor: ¿esta franja es libranza del profesor?
+        let esLibranza=false;
+        if(svMode==="teacher"&&svTch){
+          const tt=S.teachers.find(t=>t.id===svTch);
+          esLibranza=(tt?.unavail||[]).some(u=>u.d===d&&u.s===sl.n);
+        }
         if(ses&&sub){
           const tch2=ses.t2?gt(ses.t2):null;
           h+=`<div class="sc" id="${cid}" style="background:${sub.bg};border-color:${sub.bd}" draggable="true" data-d="${d}" data-s="${sl.n}">
@@ -4132,6 +4456,24 @@ function drawSG(){
             ${svMode==="group"&&tch?`<div style="font-size:9px;color:${sub.tx};opacity:.7;margin-top:2px;display:flex;align-items:center;gap:3px"><div style="width:6px;height:6px;border-radius:50%;background:${tch.color};flex-shrink:0"></div>${tch.name.split(" ")[0]}${tch2?` / ${tch2.name.split(" ")[0]}`:""}</div>`:""}
             ${svMode==="teacher"&&ses.group?`<div style="font-size:9px;color:${sub.tx};opacity:.7;margin-top:2px">${ses.group}</div>`:""}
           </div>`;
+        } else if(svMode==="teacher"&&esLibranza){
+          // Mostrar LIBRANZA en azul
+          h+=`<div class="sc" id="${cid}" style="background:rgba(56,130,200,.18);border-color:rgba(56,130,200,.45);min-height:32px;display:flex;align-items:center;justify-content:center">
+            <span style="font-size:10px;font-weight:800;color:#2563a8">LIBRANZA</span></div>`;
+        } else if(svMode==="teacher"){
+          // Celda vacía del profesor: clic para asignar función
+          const fnCell=getTchFunction(svTch,d,sl.n);
+          if(fnCell){
+            h+=`<div class="sc" id="${cid}" onclick="assignTeacherFunction('${svTch}','${d}','${sl.n}')"
+              style="cursor:pointer;background:rgba(120,120,140,.1);border-color:rgba(120,120,140,.3);min-height:32px;display:flex;align-items:center;justify-content:center"
+              title="Clic para cambiar función">
+              <span style="font-size:9px;font-weight:800;color:var(--tx2)">${fnCell}</span></div>`;
+          } else {
+            h+=`<div class="sc emp" id="${cid}" onclick="assignTeacherFunction('${svTch}','${d}','${sl.n}')"
+              title="Clic para asignar guardia/apoyo, coordinación o equipo directivo"
+              style="cursor:pointer;min-height:32px;display:flex;align-items:center;justify-content:center">
+              <span style="color:var(--tx4);font-size:10px">＋</span></div>`;
+          }
         } else {
           h+=`<div class="sc emp" id="${cid}" data-d="${d}" data-s="${sl.n}" 
             ondblclick="manualPlaceCell('${svGrp||svTch}','${d}','${sl.n}')"
@@ -4777,9 +5119,11 @@ function downloadAllSchedules(){
             const bg=subjectBg(cell.s);
             const tx=subjectTx(cell.s);
             const tname=S.teachers.find(t=>t.id===cell.t)?.name||'';
+            const tname2=cell.t2?S.teachers.find(t=>t.id===cell.t2)?.name||'':'';
             const subj=S.subjects.find(s=>s.code===cell.s);
+            const profStr=tname2?`${tname} / ${tname2}`:tname;
             ws[`${col}${rowStr}`]={
-              v:`${subj?.name||cell.s}\n${tname}`,
+              v:`${subj?.name||cell.s}\n${profStr}`,
               s:cellStyle(bg,tx)
             };
           } else {
@@ -4803,7 +5147,14 @@ function downloadAllSchedules(){
       ['GRUPOS',''],['Grupo','Hoja']];
     S.groups.forEach(g=>{ idx.push([g.name,g.name]); });
     idx.push([''],['PROFESORES',''],['Nombre','Hoja']);
-    sortedTeachers().forEach(t=>{ idx.push([t.name,'Prof_'+t.name.split(' ')[0]]); });
+    const usedNames=[];
+    sortedTeachers().forEach(t=>{
+      let baseName=('Prof_'+t.name.replace(/[\\/\?\*\[\]:]/g,' ')).substring(0,31);
+      let sn=baseName, suffix=2;
+      while(usedNames.includes(sn)){ sn=baseName.substring(0,29)+'_'+suffix; suffix++; }
+      usedNames.push(sn);
+      idx.push([t.name,sn]);
+    });
     const wsIdx=XLSX.utils.aoa_to_sheet(idx);
     wsIdx['!cols']=[{wch:22},{wch:22}];
     XLSX.utils.book_append_sheet(wb,wsIdx,'Índice');
@@ -4918,25 +5269,34 @@ function downloadAllSchedules(){
       ws['!merges']=merge;
       ws['!cols']=[{wch:12},...DAYS.map(()=>({wch:20}))];
       ws['!rows']=[{hpt:20},{hpt:16},...classSlots.map(()=>({hpt:32}))];
-      // Nombre hoja: Prof_Nombre (máx 31 chars)
-      const sheetName=('Prof_'+t.name.split(' ')[0]).substring(0,31);
+      // Nombre hoja único: usar nombre completo, truncar a 31, evitar duplicados
+      let baseName=('Prof_'+t.name.replace(/[\\/\?\*\[\]:]/g,' ')).substring(0,31);
+      let sheetName=baseName, suffix=2;
+      while(wb.SheetNames.includes(sheetName)){
+        sheetName=baseName.substring(0,29)+'_'+suffix; suffix++;
+      }
       XLSX.utils.book_append_sheet(wb,ws,sheetName);
     });
 
     // Descargar
     const fecha=new Date().toISOString().slice(0,10);
-    XLSX.writeFile(wb,`horarios-ceip-monforte-${fecha}.xlsx`);
-    toast("✅ Excel descargado con todos los horarios");
+    try{
+      XLSX.writeFile(wb,`horarios-ceip-monforte-${fecha}.xlsx`);
+      toast("✅ Excel descargado con todos los horarios");
+    }catch(err){
+      console.error("Error escribiendo Excel:",err);
+      toast("Error al generar Excel: "+err.message,"warn");
+    }
   }
 
   // Cargar SheetJS si no está disponible
   if(window.XLSX){
-    doExport();
+    try{ doExport(); }catch(e){ console.error(e); toast("Error: "+e.message,"warn"); }
   } else {
     const script=document.createElement('script');
     script.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-    script.onload=doExport;
-    script.onerror=()=>toast("Error cargando SheetJS","warn");
+    script.onload=()=>{ try{ doExport(); }catch(e){ console.error(e); toast("Error: "+e.message,"warn"); } };
+    script.onerror=()=>toast("Error cargando SheetJS — ¿sin conexión a internet?","warn");
     document.head.appendChild(script);
   }
 }
